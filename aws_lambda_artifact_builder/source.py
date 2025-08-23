@@ -8,6 +8,12 @@ It handles the complete lifecycle of Lambda source deployment packages:
 2. Creating compressed zip archives of the built source
 3. Uploading artifacts to S3 with proper versioning and metadata
 
+Key Assumptions:
+1. **Pip-based packaging**: Uses `pip install` to build source artifacts, ensuring proper 
+   Python package installation and module discovery within the Lambda runtime environment.
+2. **Code folder structure**: Assumes the Lambda entry point (lambda_function.py) is included
+   within the installed package structure, not as a separate external file.
+
 S3 Storage Structure::
 
     s3://bucket/${s3dir_lambda}/source/0.1.1/source.zip
@@ -24,6 +30,11 @@ import subprocess
 import dataclasses
 from pathlib import Path
 from urllib.parse import urlencode
+
+try:
+    import tomllib  # Python 3.11+
+except ImportError:  # pragma: no cover
+    import tomli as tomllib  # Python < 3.11
 
 from func_args.api import OPT
 from s3pathlib import S3Path
@@ -50,7 +61,12 @@ def build_source_artifacts_using_pip(
 ):
     """
     Build Lambda source artifacts by installing the current package using pip.
-    
+
+    **Why pip install?** Using pip ensures proper Python package installation with correct
+    module paths, entry points, and metadata that Lambda runtime expects. This approach
+    guarantees that all package modules are discoverable and importable within the Lambda
+    execution environment, unlike simple file copying which may break import resolution.
+
     This function installs the Python package (defined by setup.py or pyproject.toml)
     into a target directory without dependencies, suitable for Lambda deployment.
     The build directory is cleaned before installation to ensure a fresh build.
@@ -67,7 +83,7 @@ def build_source_artifacts_using_pip(
         printer(f"{path_bin_pip = !s}")
         printer(f"{path_setup_py_or_pyproject_toml = !s}")
         printer(f"{dir_lambda_source_build = !s}")
-    
+
     # Clean existing build directory to ensure fresh installation
     clean_build_directory(
         dir_build=dir_lambda_source_build,
@@ -100,7 +116,13 @@ def create_source_zip(
 ) -> str:
     """
     Create a compressed zip archive from the Lambda source build directory.
-    
+
+    **Important assumption**: This function expects that the Lambda entry point
+    (typically `lambda_function.py` with a `lambda_handler` function) is included
+    within the installed package structure in the build directory, not as a separate
+    external file. The entry point should be part of your Python package as defined
+    in setup.py or pyproject.toml.
+
     This function creates a zip file containing all files from the build directory
     using maximum compression (level 9) and calculates the SHA256 hash of the
     source directory for integrity verification.
@@ -115,7 +137,7 @@ def create_source_zip(
         printer(f"--- Creating Lambda source zip file ...")
         printer(f"{dir_lambda_source_build = !s}")
         printer(f"{path_source_zip = !s}")
-    
+
     # Prepare zip command with maximum compression
     args = [
         "zip",
@@ -143,7 +165,7 @@ def create_source_zip(
 class SourceS3Layout:
     """
     S3 directory layout manager for Lambda source artifacts.
-    
+
     This class provides a structured approach to organizing Lambda source artifacts
     in S3 with semantic versioning. Each version gets its own directory containing
     the source.zip file.
@@ -163,7 +185,7 @@ class SourceS3Layout:
     def get_s3path_source_zip(self, source_version: str) -> S3Path:
         """
         Generate S3 path for a specific version of the Lambda source zip.
-        
+
         :param source_version: Semantic version string, e.g., ``"0.1.1"``
         :return: S3Path object pointing to the versioned source.zip file
         """
@@ -184,7 +206,7 @@ def upload_source_artifacts(
 ) -> S3Path:
     """
     Upload Lambda source artifact zip file to S3 with versioning and metadata.
-    
+
     This function uploads the built source zip to S3 following the structured layout,
     automatically adding SHA256 hash metadata for integrity verification and
     supporting custom metadata and tags.
@@ -206,7 +228,7 @@ def upload_source_artifacts(
         printer(f"{source_sha256 = }")
         printer(f"{path_source_zip = !s}")
         printer(f"{s3dir_lambda.uri =}")
-    
+
     # Initialize S3 layout manager and get target path
     source_s3_layout = SourceS3Layout(
         s3dir_lambda=s3dir_lambda,
@@ -219,10 +241,10 @@ def upload_source_artifacts(
         printer(f"Uploading Lambda source artifact to {uri}")
         url = s3path_source_zip.console_url
         printer(f"preview at {url}")
-    
+
     # Configure S3 upload parameters
     extra_args = {"ContentType": "application/zip"}
-    
+
     # Add SHA256 hash to metadata for integrity verification
     metadata_arg = {
         S3MetadataKeyEnum.source_sha256: source_sha256,
@@ -231,7 +253,7 @@ def upload_source_artifacts(
     if isinstance(metadata, dict):
         metadata_arg.update(metadata)
     extra_args["Metadata"] = metadata_arg
-    
+
     # Add tags if provided
     if isinstance(tags, dict):
         extra_args["Tagging"] = urlencode(tags)
@@ -243,3 +265,54 @@ def upload_source_artifacts(
         bsm=s3_client,
     )
     return s3path_source_zip
+
+
+@dataclasses.dataclass
+class BuildSourceArtifactsResult:
+    source_sha256: str
+    s3path_source_zip: S3Path = dataclasses.field()
+
+
+def build_package_upload_source_artifacts(
+    s3_client: "S3Client",
+    dir_project_root: Path,
+    s3dir_lambda: S3Path,
+    verbose: bool = True,
+    skip_prompt: bool = False,
+) -> BuildSourceArtifactsResult:
+    # step 1: build source artifacts using pip
+    path_bin_pip = dir_project_root / ".venv" / "bin" / "pip"
+    path_pyproject_toml = dir_project_root / "pyproject.toml"
+    dir_lambda_source_build = dir_project_root / "build" / "lambda" / "source" / "build"
+    build_source_artifacts_using_pip(
+        path_bin_pip=path_bin_pip,
+        path_setup_py_or_pyproject_toml=path_pyproject_toml,
+        dir_lambda_source_build=dir_lambda_source_build,
+        verbose=verbose,
+        skip_prompt=skip_prompt,
+    )
+
+    # step 2: create compressed zip archive of the built source
+    path_source_zip = dir_lambda_source_build / "source.zip"
+    source_sha256 = create_source_zip(
+        dir_lambda_source_build=dir_lambda_source_build,
+        path_source_zip=path_source_zip,
+        verbose=verbose,
+    )
+
+    # step 3: upload the zip file to S3 with versioning
+    pyproject_toml_data = tomllib.loads(path_pyproject_toml.read_text())
+    source_version = pyproject_toml_data["project"]["version"]
+    s3path_source_zip = upload_source_artifacts(
+        s3_client=s3_client,
+        source_version=source_version,
+        source_sha256=source_sha256,
+        path_source_zip=path_source_zip,
+        s3dir_lambda=s3dir_lambda,
+        verbose=verbose,
+    )
+
+    return BuildSourceArtifactsResult(
+        source_sha256=source_sha256,
+        s3path_source_zip=s3path_source_zip,
+    )

@@ -189,11 +189,11 @@ def clean_build_directory(
     :param skip_prompt: If True, skips the confirmation prompt before removing
         an existing directory.
     """
-    if skip_prompt:
-        flag = True
-    else:
-        flag = prompt_to_confirm_before_remove_dir(dir_build)
     if dir_build.exists():
+        if skip_prompt:
+            flag = True
+        else:
+            flag = prompt_to_confirm_before_remove_dir(dir_build)
         if flag:
             shutil.rmtree(dir_build)
         else:

@@ -38,7 +38,7 @@ build_source_artifacts_using_pip(
     path_setup_py_or_pyproject_toml=path_setup_py_or_pyproject_toml,
     dir_lambda_source_build=dir_lambda_source_build,
     verbose=True,  # Show detailed output
-    skip_prompt=True,  # Automatically clean existing build directory
+    skip_prompt=False,  # Automatically clean existing build directory
 )
 
 # ------------------------------------------------------------------------------
