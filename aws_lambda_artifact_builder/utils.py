@@ -159,7 +159,7 @@ def copy_source_for_lambda_deployment(
                 write_bytes(target_file_path, file_path.read_bytes())
 
 
-def prompt_to_confirm_before_remove_dir(dir_path: Path):  # pragma: no cover
+def prompt_to_confirm_before_remove_dir(dir_path: Path) -> bool:  # pragma: no cover
     """
     Prompt user to confirm before removing a directory and its contents.
     """
@@ -168,3 +168,33 @@ def prompt_to_confirm_before_remove_dir(dir_path: Path):  # pragma: no cover
         f"'{dir_path}' and all its contents? (Y/N): "
     )
     return answer.strip().upper() == "Y"
+
+
+def prepare_lambda_deploy_dir(
+    dir_build: Path,
+    folder_alias: str,
+    skip_prompt: bool = False,
+):  # pragma: no cover
+    """
+    Prepare the temporary build directory for building artifacts.
+
+    This function ensures that the build directory is clean by removing
+    it if it already exists, optionally prompting the user for confirmation. It is
+    a common utility used by multiple methods that build Lambda artifacts,
+    regardless of the specific build tool or approach.
+
+    :param dir_build: The temporary build directory for Lambda artifacts.
+    :param folder_alias: A human-readable alias for the directory, used in
+        prompts and error messages.
+    :param skip_prompt: If True, skips the confirmation prompt before removing
+        an existing directory.
+    """
+    if skip_prompt:
+        flag = True
+    else:
+        flag = prompt_to_confirm_before_remove_dir(dir_build)
+    if dir_build.exists():
+        if flag:
+            shutil.rmtree(dir_build)
+        else:
+            raise RuntimeError(f"{folder_alias} {dir_build} already exists!")
