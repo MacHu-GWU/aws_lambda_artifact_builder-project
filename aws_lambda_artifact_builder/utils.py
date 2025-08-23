@@ -170,7 +170,7 @@ def prompt_to_confirm_before_remove_dir(dir_path: Path) -> bool:  # pragma: no c
     return answer.strip().upper() == "Y"
 
 
-def prepare_lambda_deploy_dir(
+def clean_build_directory(
     dir_build: Path,
     folder_alias: str,
     skip_prompt: bool = False,
