@@ -2773,6 +2773,28 @@ cryptography = ">=2.0"
 jeepney = ">=0.6"
 
 [[package]]
+name = "simple-aws-lambda"
+version = "0.1.1"
+description = "Objective Oriented Python SDK for AWS Lambda."
+optional = false
+python-versions = "<4.0,>=3.10"
+groups = ["main"]
+files = [
+    {file = "simple_aws_lambda-0.1.1-py3-none-any.whl", hash = "sha256:4cdcd8670cbd2974556fe8aad0cb850c6ac36293d514d6f782c38bd4a19fb27e"},
+    {file = "simple_aws_lambda-0.1.1.tar.gz", hash = "sha256:83f58a165155280849ee7768b24eb224a861ff2a2c8b47d745db1feada37f77b"},
+]
+
+[package.dependencies]
+boto3 = ">=1.35.99,<2.0.0"
+func_args = ">=1.0.1,<2.0.0"
+iterproxy = ">=0.3.1,<1.0.0"
+
+[package.extras]
+dev = ["boto3_stubs[lambda] (>=1.35.99,<2.0.0)", "build (>=1.2.1,<2.0.0)", "rich (>=13.8.1,<14.0.0)", "twine (>=6.0.0,<7.0.0)", "wheel (>=0.45.0,<1.0.0)"]
+doc = ["Sphinx (>=7.4.7,<8.0.0)", "docfly (==3.0.0)", "furo (==2024.8.6)", "ipython (>=8.18.1,<8.19.0)", "nbsphinx (>=0.8.12,<1.0.0)", "pygments (>=2.18.0,<3.0.0)", "rstobj (==1.2.1)", "sphinx-copybutton (>=0.5.2,<1.0.0)", "sphinx-design (>=0.6.1,<1.0.0)", "sphinx-jinja (>=2.0.2,<3.0.0)"]
+test = ["moto (>=5.1.10,<6.0.0)", "pytest (>=8.2.2,<9.0.0)", "pytest-cov (>=6.0.0,<7.0.0)", "s3pathlib (>=2.0.1,<3.0.0)"]
+
+[[package]]
 name = "six"
 version = "1.17.0"
 description = "Python 2 and 3 compatibility utilities"
@@ -3466,4 +3488,4 @@ test = ["moto", "pytest", "pytest-cov"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "7e0cb3e1c9662fced403b098499c08ff32770b7f2351e2d6d3a92fde632c9187"
+content-hash = "4942fe09743174d7db7d3960761eef6d402951d4465bb1454c5fe1fffdf9dc19"
