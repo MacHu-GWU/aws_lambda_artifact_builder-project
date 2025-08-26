@@ -3,6 +3,9 @@
 import enum
 
 
+ZFILL = 6
+
+
 class S3MetadataKeyEnum(str, enum.Enum):
     """
     S3 Metadata Key Enum

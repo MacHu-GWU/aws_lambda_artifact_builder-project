@@ -189,7 +189,7 @@ class SourceS3Layout:
         :param source_version: Semantic version string, e.g., ``"0.1.1"``
         :return: S3Path object pointing to the versioned source.zip file
         """
-        # Create versioned path: s3://bucket/path/source/{version}/source.zip
+        # Create versioned path: ${s3dir_lambda}/source/{version}/source.zip
         return self.s3dir_lambda.joinpath("source", source_version, "source.zip")
 
 
