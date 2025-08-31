@@ -3,4 +3,4 @@
 
 from pywf import pywf
 
-pywf.setup_readthedocs_project(real_run=True, verbose=True)
+pywf.deploy_cloudflare_pages(real_run=True, verbose=True)

@@ -55,6 +55,9 @@ classifier = [
 # Core Dependencies
 # ------------------------------------------------------------------------------
 dependencies = [
+    # Intentionally include a package in AWS code artifact
+    # So we can test building AWS Lambda layer with private package
+    "cookiecutter-pywf-internal-proprietary-demo>=0.1.1,<1.0.0",
     # Data validation
     "pydantic>=2.11.7,<3.0.0",
     # AWS essential SDK
