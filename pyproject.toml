@@ -43,11 +43,8 @@ classifier = [
 # Core Dependencies
 # ------------------------------------------------------------------------------
 dependencies = [
-    "boto3>=1.35.99,<2.0.0",
-    "iterproxy>=0.3.1,<1.0.0",
+    "soft-deps>=0.1.1,<1.0.0",
     "func_args>=1.0.1,<2.0.0",
-    "s3pathlib>=2.0.1,<3.0.0",
-    "simple_aws_lambda>=0.1.1,<1.0.0",
     'tomli>=2.0.0;python_version < "3.11"',
 ]
 
@@ -59,6 +56,19 @@ dependencies = [
 # IMPORTANT: all optional dependencies has to be compatible with the "requires-python" field
 # ------------------------------------------------------------------------------
 [project.optional-dependencies]
+# ------------------------------------------------------------------------------
+# Local Development dependenceies
+# ------------------------------------------------------------------------------
+aws = [
+    "boto3>=1.35.99,<2.0.0",
+]
+
+publish = [
+    "boto3>=1.35.99,<2.0.0",
+    "iterproxy>=0.3.1,<1.0.0",
+    "s3pathlib>=2.0.1,<3.0.0",
+    "simple_aws_lambda>=0.1.1,<1.0.0",
+]
 
 # ------------------------------------------------------------------------------
 # Local Development dependenceies
