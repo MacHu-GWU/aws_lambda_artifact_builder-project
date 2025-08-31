@@ -31,3 +31,5 @@ dir_load_test = dir_project_root / "tests_load"
 # ------------------------------------------------------------------------------
 dir_docs_source = dir_project_root / "docs" / "source"
 dir_docs_build_html = dir_project_root / "docs" / "build" / "html"
+
+path_build_lambda_layer_in_container_script = dir_here / "_build_lambda_layer_in_container.py"

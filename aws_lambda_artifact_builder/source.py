@@ -51,6 +51,11 @@ if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3.client import S3Client
 
 
+@dataclasses.dataclass
+class SourcePathLayout:
+    pass
+
+
 def build_source_artifacts_using_pip(
     path_bin_pip: Path,
     path_setup_py_or_pyproject_toml: Path,

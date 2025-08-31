@@ -2,6 +2,7 @@
 aws_lambda_artifact_builder.egg-info/
 docs/source/**/index.md
 tmp/
+_build_lambda_layer_in_container.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
