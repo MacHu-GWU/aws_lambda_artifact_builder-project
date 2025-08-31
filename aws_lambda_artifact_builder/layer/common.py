@@ -88,7 +88,8 @@ class LayerPathLayout(BaseFrozenModel):
 
     @property
     def path_build_lambda_layer_in_container_script_in_local(self) -> Path:
-        return self.dir_repo / "build_lambda_layer_in_container.py"
+        return self.dir_project_root / "build_lambda_layer_in_container.py"
+        # return self.dir_repo / "build_lambda_layer_in_container.py"
 
     @property
     def path_build_lambda_layer_in_container_script_in_container(self) -> str:
@@ -365,15 +366,6 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         )
 
     @property
-    def path_build_lambda_layer_in_container_script_in_container(self) -> str:
-        """
-        Python script that builds AWS Lambda layers inside Docker containers,
-        orchestrating dependencies installations and layer artifact creation
-        as an automated build process.
-        """
-        return f"/var/task/{path_build_lambda_layer_in_container_script.name}"
-
-    @property
     def args(self) -> list[str]:
         return [
             "docker",
@@ -391,12 +383,6 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
             "-u",
             self.path_layout.path_build_lambda_layer_in_container_script_in_container,
         ]
-
-    def step_01_copy_build_script(self):
-        self.path_layout.copy_build_script(
-            p_src=path_build_lambda_layer_using_poetry_in_container_script,
-            printer=self.printer,
-        )
 
     def step_02_setup_private_repository_credential(self):
         pass

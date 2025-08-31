@@ -50,8 +50,11 @@ Welcome to ``aws_lambda_artifact_builder`` Documentation
 .. image:: https://aws-lambda-artifact-builder.readthedocs.io/en/latest/_static/aws_lambda_artifact_builder-logo.png
     :target: https://aws-lambda-artifact-builder.readthedocs.io/en/latest/
 
-Documentation for ``aws_lambda_artifact_builder``.
+A simple tool that automates the process of building and deploying AWS Lambda `source <https://docs.aws.amazon.com/lambda/latest/dg/python-package.html>`_ and `layer <https://docs.aws.amazon.com/lambda/latest/dg/chapter-layers.html>`_ artifacts. It supports the following build tools:
 
+- `pip <https://pip.pypa.io/>`_
+- `poetry <https://python-poetry.org/>`_
+- `uv <https://docs.astral.sh/uv/>`_
 
 .. _install:
 

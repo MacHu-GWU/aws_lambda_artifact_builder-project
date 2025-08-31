@@ -40,16 +40,23 @@ _dir_layer = dir_package / "layer"
 # The following scripts will be copied to the temporary build directory
 # and mount the project root directory to the container,
 # so that the script can be executed in the container environment.
-# _basename = "_build_lambda_layer_using_pip_in_container.py"
-# path_build_lambda_layer_using_pip_in_container_script = _dir_layer / _basename
-# """
-# The purposely designed Python shell script to build the Lambda layer artifacts
-# using pip in a container environment.
-# """
+_basename = "_build_lambda_layer_using_pip_in_container.py"
+path_build_lambda_layer_using_pip_in_container_script = _dir_layer / _basename
+"""
+The purposely designed Python shell script to build the Lambda layer artifacts
+using pip in a container environment.
+"""
 
 _basename = "_build_lambda_layer_using_poetry_in_container.py"
 path_build_lambda_layer_using_poetry_in_container_script = _dir_layer / _basename
 """
 The purposely designed Python shell script to build the Lambda layer artifacts
 using poetry in a container environment. 
+"""
+
+_basename = "_build_lambda_layer_using_uv_in_container.py"
+path_build_lambda_layer_using_uv_in_container_script = _dir_layer / _basename
+"""
+The purposely designed Python shell script to build the Lambda layer artifacts
+using uv in a container environment. 
 """

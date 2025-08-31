@@ -26,14 +26,14 @@ else:
 
 dir_bin = Path(sys.executable).parent
 path_bin_pip = dir_bin / "pip"
-path_bin_poetry = dir_bin / "poetry"
+path_bin_uv = Path("/root/.local/bin/uv")
 
-print("--- Pip install poetry ...")
-args = [f"{path_bin_pip}", "install", "-q", "poetry>=2.1.1,<3.0.0"]
+print("--- install uv ...")
+args = "curl -LsSf https://astral.sh/uv/install.sh | sh"
 st = datetime.now()
-subprocess.run(args, check=True)
+subprocess.run(args, shell=True, check=True)
 elapsed = (datetime.now() - st).total_seconds()
-print(f"pip install poetry elapsed: {elapsed:.2f} seconds")
+print(f"install uv elapsed: {elapsed:.2f} seconds")
 
 print("--- Pip install aws_lambda_artifact_builder ...")
 st = datetime.now()
@@ -46,10 +46,10 @@ subprocess.run(args, check=True)
 elapsed = (datetime.now() - st).total_seconds()
 print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 
-from aws_lambda_artifact_builder.layer.poetry_builder import build_layer_artifacts_using_poetry_in_local
+from aws_lambda_artifact_builder.layer.uv_builder import build_layer_artifacts_using_uv_in_local
 
-build_layer_artifacts_using_poetry_in_local(
-    path_bin_poetry=path_bin_poetry,
+build_layer_artifacts_using_uv_in_local(
+    path_bin_uv=path_bin_uv,
     path_pyproject_toml=dir_here / "pyproject.toml",
     skip_prompt=True,
 )

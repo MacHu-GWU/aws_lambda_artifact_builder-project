@@ -23,7 +23,5 @@ build_layer_artifacts_using_poetry_in_container(
     py_ver_minor=11,
     is_arm=False,
 )
-et = datetime.now()
-elapsed = (et - st).total_seconds()
-# show two digits after decimal point
-print(f"Elapsed: {elapsed:.2f} seconds")
+elapsed = (datetime.now() - st).total_seconds()
+print(f"Total elapsed: {elapsed:.2f} seconds")
