@@ -193,6 +193,11 @@ name = "esc"
 url = "https://esc-982534387049.d.codeartifact.us-east-1.amazonaws.com/pypi/esc-python/simple/"
 priority = "supplemental"
 
+[[tool.uv.index]]
+name = "esc"
+url = "https://esc-982534387049.d.codeartifact.us-east-1.amazonaws.com/pypi/esc-python/simple/"
+authenticate = "always"
+
 [build-system] # Read: https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#declaring-the-build-backend
 requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

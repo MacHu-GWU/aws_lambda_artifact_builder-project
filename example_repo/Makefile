@@ -40,6 +40,14 @@ poetry-export: ## ⭐ Export dependencies to requirements.txt
 	~/.pyenv/shims/python ./bin/g2_t1_s6_poetry_export.py
 
 
+uv-login: ## Configure uv with AWS CodeArtifact
+	~/.pyenv/shims/python ./bin/g2_t1_s7_uv_login.py
+
+
+uv-lock: ## ⭐ Resolve dependencies using uv, update uv.lock file
+	~/.pyenv/shims/python ./bin/g2_t1_s8_uv_lock.py
+
+
 install-root: ## Install Package itself without any dependencies
 	~/.pyenv/shims/python ./bin/g2_t2_s1_install_only_root.py
 
