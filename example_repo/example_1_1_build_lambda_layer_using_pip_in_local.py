@@ -3,9 +3,8 @@
 from pathlib import Path
 from datetime import datetime
 
-import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
-
 from settings import credentials
+import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
 
 # Current project directory
 dir_here = Path(__file__).absolute().parent

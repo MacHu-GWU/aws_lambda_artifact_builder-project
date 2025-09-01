@@ -9,7 +9,6 @@ THIS SHELL SCRIPT HAS TO BE EXECUTED IN THE CONTAINER, NOT IN THE HOST MACHINE.
 """
 
 import sys
-import json
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -42,6 +41,7 @@ subprocess.run(args, check=True)
 # args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.1,<1.0.0"]
 # subprocess.run(args, check=True)
 # --- End production code ---
+
 elapsed = (datetime.now() - st).total_seconds()
 print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 

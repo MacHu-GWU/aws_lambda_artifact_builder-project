@@ -537,9 +537,6 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
             path_pyproject_toml=self.path_pyproject_toml,
         )
 
-    def read_credentials(self):
-        pass
-
     def step_01_print_info(self):
         """
         Display build configuration and paths.
