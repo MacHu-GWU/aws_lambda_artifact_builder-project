@@ -37,7 +37,7 @@ except ImportError:  # pragma: no cover
     import tomli as tomllib  # Python < 3.11
 
 from func_args.api import OPT
-from s3pathlib import S3Path
+from .imports import S3Path
 
 from .vendor.better_pathlib import temp_cwd
 from .vendor.hashes import hashes
@@ -185,9 +185,9 @@ class SourceS3Layout:
         ...
     """
 
-    s3dir_lambda: S3Path = dataclasses.field()
+    s3dir_lambda: "S3Path" = dataclasses.field()
 
-    def get_s3path_source_zip(self, source_version: str) -> S3Path:
+    def get_s3path_source_zip(self, source_version: str) -> "S3Path":
         """
         Generate S3 path for a specific version of the Lambda source zip.
 
@@ -203,12 +203,12 @@ def upload_source_artifacts(
     source_version: str,
     source_sha256: str,
     path_source_zip: Path,
-    s3dir_lambda: S3Path,
+    s3dir_lambda: "S3Path",
     metadata: dict[str, str] | None = OPT,
     tags: dict[str, str] | None = OPT,
     verbose: bool = True,
     printer: T.Callable[[str], None] = print,
-) -> S3Path:
+) -> "S3Path":
     """
     Upload Lambda source artifact zip file to S3 with versioning and metadata.
 
@@ -275,13 +275,13 @@ def upload_source_artifacts(
 @dataclasses.dataclass
 class BuildSourceArtifactsResult:
     source_sha256: str
-    s3path_source_zip: S3Path = dataclasses.field()
+    s3path_source_zip: "S3Path" = dataclasses.field()
 
 
 def build_package_upload_source_artifacts(
     s3_client: "S3Client",
     dir_project_root: Path,
-    s3dir_lambda: S3Path,
+    s3dir_lambda: "S3Path",
     verbose: bool = True,
     skip_prompt: bool = False,
 ) -> BuildSourceArtifactsResult:

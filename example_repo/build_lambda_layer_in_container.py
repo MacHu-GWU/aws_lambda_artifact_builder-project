@@ -29,36 +29,36 @@ path_bin_pip = dir_bin / "pip"
 
 print("--- Pip install aws_lambda_artifact_builder ...")
 st = datetime.now()
-args = [f"{path_bin_pip}", "install", "soft-deps>=0.1.1,<1.0.0"]
+path_req = dir_here / "requirements-aws-lambda-artifact-builder.txt"
+args = [f"{path_bin_pip}", "install", "-r", f"{path_req}"]
 subprocess.run(args, check=True)
-args = [f"{path_bin_pip}", "install", "func_args>=1.0.1,<2.0.0"]
-subprocess.run(args, check=True)
-# args = [f"{path_bin_pip}", "install", "-q", "-r", "requirements.txt"]
+# args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.1,<1.0.0"]
 # subprocess.run(args, check=True)
 elapsed = (datetime.now() - st).total_seconds()
 print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 
-from aws_lambda_artifact_builder.layer.pip_builder import (
+from aws_lambda_artifact_builder.api import (
+    Credentials,
     build_layer_artifacts_using_pip_in_local,
 )
+
+path_credentials = (
+    dir_here
+    / "build"
+    / "lambda"
+    / "layer"
+    / "repo"
+    / "private-repository-credentials.json"
+)
+
+if path_credentials.exists():
+    credentials = Credentials.load(path=path_credentials)
+else:
+    credentials = None
 
 build_layer_artifacts_using_pip_in_local(
     path_bin_pip=path_bin_pip,
     path_pyproject_toml=dir_here / "pyproject.toml",
+    credentials=credentials,
     skip_prompt=True,
 )
-# dir_root = dir_here
-#
-# path_pypi_index_url = dir_here / "pypi_index_url.txt"
-# if path_pypi_index_url.exists():
-#     pypi_index_url = path_pypi_index_url.read_text().strip()
-#     extra_args = ["--index-url", pypi_index_url]
-# else:
-#     extra_args = None
-# layer_sha256 = aws_lambda_layer.build_layer_artifacts(
-#     path_requirements=dir_root / "requirements.txt",
-#     dir_build=dir_root / "build" / "lambda",
-#     bin_pip="/var/lang/bin/pip",
-#     quiet=False,
-#     extra_args=extra_args,
-# )
