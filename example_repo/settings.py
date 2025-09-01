@@ -12,8 +12,9 @@ py_ver_minor = sys.version_info.minor
 
 bsm = BotoSesManager(profile_name="esc_app_dev_us_east_1")
 bucket = f"{bsm.aws_account_alias}-{bsm.aws_region}-artifacts"
-prefix = "projects/aws_lambda_artifact_builder/lambda/"
+prefix = "projects/aws_lambda_artifact_builder/example_repo/my_app/lambda/"
 s3dir_lambda = S3Path(f"s3://{bucket}/{prefix}").to_dir()
+layer_name = "aws_lambda_artifact_builder_my_app"
 
 # ------------------------------------------------------------------------------
 # Code below is for testing and debugging only

@@ -28,7 +28,7 @@ from functools import cached_property
 from func_args.api import BaseFrozenModel, REQ
 
 from ..typehint import T_PRINTER
-from ..constants import ZFILL
+from ..constants import ZFILL, LayerBuildToolEnum
 from ..imports import S3Path
 from ..utils import write_bytes, clean_build_directory
 
@@ -377,6 +377,38 @@ class LayerPathLayout(BaseFrozenModel):
             printer=printer,
         )
 
+    def get_path_manifest(
+        self,
+        tool: LayerBuildToolEnum,
+    ) -> Path:
+        """
+        Get the dependency manifest file path for the specified build tool.
+
+        A dependency manifest is the "source of truth" file that contains the exact
+        specification of all dependencies and their versions. With this manifest file,
+        the Python layer can be rebuilt identically, ensuring reproducible builds
+        across different environments.
+
+        **Manifest Types by Tool:**
+
+        - **pip**: ``requirements.txt`` - Lists exact package versions and hashes
+        - **poetry**: ``poetry.lock`` - Lock file with resolved dependency tree
+        - **uv**: ``uv.lock`` - Lock file with ultra-fast resolved dependencies
+
+        :param tool: The build tool enum specifying which manifest to return
+        :return: Path to the appropriate dependency manifest file
+        :raises ValueError: If an unsupported build tool is specified
+        """
+
+        if tool == LayerBuildToolEnum.pip:
+            return self.path_requirements_txt
+        elif tool == LayerBuildToolEnum.poetry:
+            return self.path_poetry_lock
+        elif tool == LayerBuildToolEnum.uv:
+            return self.path_uv_lock
+        else:
+            raise ValueError(f"Unsupported tool: {tool}")
+
 
 @dataclasses.dataclass
 class LayerS3Layout:
@@ -419,6 +451,25 @@ class LayerS3Layout:
         """
         return self.s3dir_lambda.joinpath("layer", "layer.zip")
 
+    def get_s3dir_layer_version(
+        self,
+        layer_version: int,
+    ) -> "S3Path":
+        """
+        Generate S3 dir for a specific layer version' artifacts.
+
+        Each layer version gets its own directory with zero-padded numbering
+        to maintain proper lexicographic ordering in S3.
+
+        :param layer_version: Layer version number (e.g., 1, 2, 3...)
+        :return: S3Path object pointing to the versioned requirements.txt file
+                 (e.g., s3://bucket/path/lambda/layer/000001/)
+        """
+        return self.s3dir_lambda.joinpath(
+            "layer",
+            str(layer_version).zfill(ZFILL),
+        ).to_dir()
+
     def get_s3path_layer_requirements_txt(
         self,
         layer_version: int,
@@ -433,11 +484,7 @@ class LayerS3Layout:
         :return: S3Path object pointing to the versioned requirements.txt file
                  (e.g., s3://bucket/path/lambda/layer/000001/requirements.txt)
         """
-        return self.s3dir_lambda.joinpath(
-            "layer",
-            str(layer_version).zfill(ZFILL),
-            "requirements.txt",
-        )
+        return self.get_s3dir_layer_version(layer_version) / "requirements.txt"
 
     def get_s3path_layer_poetry_lock(
         self,
@@ -453,11 +500,7 @@ class LayerS3Layout:
         :return: S3Path object pointing to the versioned poetry.lock file
                  (e.g., s3://bucket/path/lambda/layer/000001/poetry.lock)
         """
-        return self.s3dir_lambda.joinpath(
-            "layer",
-            str(layer_version).zfill(ZFILL),
-            "poetry.lock",
-        )
+        return self.get_s3dir_layer_version(layer_version) / "poetry.lock"
 
     def get_s3path_layer_uv_lock(
         self,
@@ -473,11 +516,7 @@ class LayerS3Layout:
         :return: S3Path object pointing to the versioned uv.lock file
                  (e.g., s3://bucket/path/lambda/layer/000001/uv.lock)
         """
-        return self.s3dir_lambda.joinpath(
-            "layer",
-            str(layer_version).zfill(ZFILL),
-            "uv.lock",
-        )
+        return self.get_s3dir_layer_version(layer_version) / "uv.lock"
 
     @property
     def s3path_last_requirements_txt(self) -> "S3Path":

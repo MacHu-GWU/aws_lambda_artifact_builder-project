@@ -1003,7 +1003,7 @@ requires-dist = [
     { name = "rich", marker = "extra == 'dev'", specifier = ">=13.8.1,<14.0.0" },
     { name = "rstobj", marker = "extra == 'doc'", specifier = ">=1.2.1,<2.0.0" },
     { name = "s3manifesto", specifier = ">=1.0.0,<2.0.0" },
-    { name = "s3pathlib", specifier = ">=2.3.6,<3.0.0" },
+    { name = "s3pathlib", specifier = "==2.3.6" },
     { name = "sphinx", marker = "extra == 'doc'", specifier = ">=7.4.7,<8.0.0" },
     { name = "sphinx-copybutton", marker = "extra == 'doc'", specifier = ">=0.5.2,<1.0.0" },
     { name = "sphinx-design", marker = "extra == 'doc'", specifier = ">=0.6.1,<1.0.0" },
