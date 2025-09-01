@@ -41,13 +41,13 @@ class PipBasedLambdaLayerLocalBuilder(
     Command class for local pip-based Lambda layer builds (Internal API).
     
     This class implements the pip-specific build workflow for creating Lambda layers
-    directly on the host machine. It extends the base local builder with pip-specific
-    logic including credential handling for private repositories.
+    directly on the host machine.
     
     **Not for direct use**: This is an internal command class. Use the public function
     :func:`build_layer_artifacts_using_pip_in_local` instead.
     
     **Key Features:**
+
     - Direct pip installation using ``--target`` flag
     - Private repository authentication via ``--index-url``
     - Pre-resolved requirements.txt processing
@@ -59,7 +59,7 @@ class PipBasedLambdaLayerLocalBuilder(
 
     def step_01_print_info(self):
         """
-        Display pip-specific build configuration.
+        Display pip-specific build information.
         
         Extends the base info display with pip executable path information
         to provide visibility into which pip binary will be used for the build.
@@ -79,11 +79,13 @@ class PipBasedLambdaLayerLocalBuilder(
         access through credential-based ``--index-url`` configuration.
         
         **Authentication Flow:**
+
         - If credentials provided: Uses ``--index-url`` with embedded authentication
         - If no credentials: Uses default PyPI and any configured pip indexes
         - Credentials format: ``https://username:token@hostname/simple/``
         
         **Command Example:**
+
         ``pip install -r requirements.txt -t artifacts/python --index-url https://user:pass@repo/simple/``
         
         :param credentials: Optional private repository authentication
@@ -125,15 +127,18 @@ def build_layer_artifacts_using_pip_in_local(
     development workflows on Linux hosts or when build speed is prioritized.
     
     **Process Flow:**
+
     1. Clean and prepare build directories
     2. Install packages from requirements.txt using pip --target
     3. Create AWS Lambda compatible directory structure (artifacts/python/)
     
     **Private Repository Support:**
+
     Supports authentication with private PyPI servers, corporate repositories,
     and AWS CodeArtifact through the credentials parameter.
     
     **Requirements:**
+
     - Must have requirements.txt file in project root
     - pip executable must be accessible (typically from virtual environment)
     - For best results, use pre-resolved requirements from Poetry/UV
@@ -182,6 +187,7 @@ class PipBasedLambdaLayerContainerBuilder(
     :func:`build_layer_artifacts_using_pip_in_container` instead.
     
     **Container Process:**
+
     1. Copy pip-specific build script to project directory
     2. Set up private repository credentials (if provided)
     3. Execute Docker run with AWS SAM build image
@@ -222,25 +228,28 @@ def build_layer_artifacts_using_pip_in_container(
     compatibility between the built layer and the deployed Lambda function.
     
     **Container Benefits:**
+
     - **Runtime Compatibility**: Uses official AWS Lambda container images
     - **Platform Independence**: Works consistently across macOS, Windows, Linux
     - **Isolation**: Doesn't affect host Python environment
     - **Architecture Support**: Handles both x86_64 and ARM64 builds
     
     **Process Flow:**
+
     1. Copy pip build script to project directory
     2. Configure private repository credentials (if provided)
     3. Run Docker container with volume mounting
     4. Container executes pip install inside Lambda-compatible environment
     
     **Private Repository Support:**
+
     Credentials are written to a JSON file and made available inside the container
     for authentication with private PyPI servers and AWS CodeArtifact.
     
     **Requirements:**
-    - Docker must be installed and running
-    - Must have requirements.txt file in project root
-    - Network access to pull AWS SAM build images
+
+    - Docker cli must be installed and running
+    - Must have ``requirements.txt`` file in project root
     
     :param path_pyproject_toml: Path to pyproject.toml file (determines project root)
     :param py_ver_major: Python major version (e.g., 3)

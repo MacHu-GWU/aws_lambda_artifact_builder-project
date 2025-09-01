@@ -132,3 +132,34 @@ A typical example would be :func:`~aws_lambda_artifact_builder.layer.pip_builder
 
 Lambda Layer Container Builder
 ------------------------------------------------------------------------------
+The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder` addresses the fundamental challenge of cross-platform compatibility in Lambda development. While local builders are fast and convenient for Linux environments, most developers work on macOS or Windows systems where native dependency builds may not match the AWS Lambda runtime environment.
+
+Container builders solve this compatibility gap by leveraging Docker to create an exact replica of the AWS Lambda execution environment on your local machine. Instead of hoping that packages built on your macOS laptop will work on Lambda's Linux runtime, container builders guarantee compatibility by building within the same operating system, architecture, and Python environment that Lambda uses.
+
+The architecture is elegantly simple yet powerful. Rather than reimplementing build logic for containers, the container builder orchestrates the execution of existing local builder logic inside Docker containers. This design leverages the AWS SAM (Serverless Application Model) build images, which are official Docker images that precisely mirror the Lambda runtime environment.
+
+**The Container Build Process**
+
+When you initiate a container build, the system follows a three-step orchestration pattern. First, it prepares the build environment by copying necessary build scripts and configuration files into your project directory. These scripts contain the same dependency installation logic used by local builders, packaged for execution inside the container.
+
+Next comes credential management, a critical step for accessing private repositories. The container builder serializes your authentication credentials to a JSON file and carefully mounts it into the container environment. This allows tools like pip, poetry, and uv running inside the container to authenticate with private PyPI servers or corporate repositories just as they would in local builds.
+
+Finally, the Docker execution phase begins. The container builder constructs the appropriate Docker command, mounting your project directory and executing the build script inside the SAM build image. All dependency installation happens within this controlled environment, ensuring that compiled extensions, binary dependencies, and platform-specific packages are built for the correct target architecture.
+
+**Architecture Benefits**
+
+This design creates several important advantages. The separation between local build logic and container orchestration means that adding support for a new dependency management tool requires minimal container-specific code. The core installation logic remains in the local builder where it's easy to test and debug, while the container builder provides a thin wrapper that handles Docker lifecycle management.
+
+Authentication flows seamlessly between host and container environments. Your local credentials for private repositories work transparently inside containers without requiring manual configuration or environment variable management. The credential serialization system ensures that sensitive authentication tokens never appear in Docker logs or container images.
+
+**Real-World Benefits** 
+
+The practical impact is significant for teams working with compiled dependencies like NumPy, SciPy, or Pandas. These packages often include C extensions that must be compiled for the target platform. Building these packages on macOS produces binaries incompatible with Linux Lambda runtimes, leading to import errors and runtime failures.
+
+Container builders eliminate these compatibility issues entirely. When you build a layer containing NumPy on your macOS laptop using a container builder, the actual compilation happens inside a Linux container matching Lambda's exact environment. The resulting layer contains Linux-compatible binaries that work perfectly in Lambda, regardless of your development platform.
+
+**Performance Considerations**
+
+While container builds add Docker overhead compared to local builds, this cost is typically offset by the eliminated debugging time from compatibility issues. The container startup time is usually measured in seconds, while troubleshooting a layer that works locally but fails in Lambda can consume hours or days of development time.
+
+The container builder's design also enables advanced optimizations. Since the build happens in an isolated environment, you can safely run parallel builds for different Python versions or architectures without conflicts. Teams can even cache container build results across developers, sharing the performance benefits of successful builds.
