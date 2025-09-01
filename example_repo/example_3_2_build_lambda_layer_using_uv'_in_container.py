@@ -17,7 +17,7 @@ path_pyproject_toml = dir_here / "pyproject.toml"
 
 # Build the lambda layer artifacts
 st = datetime.now()
-aws_lambda_artifact_builder.build_layer_artifacts_using_poetry_in_container(
+aws_lambda_artifact_builder.build_layer_artifacts_using_uv_in_container(
     path_pyproject_toml=path_pyproject_toml,
     py_ver_major=3,
     py_ver_minor=11,
