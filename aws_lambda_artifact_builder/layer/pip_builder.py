@@ -13,7 +13,11 @@ from ..vendor.better_pathlib import temp_cwd
 from ..typehint import T_PRINTER
 from ..paths import path_build_lambda_layer_using_pip_in_container_script
 
-from .common import BasedLambdaLayerLocalBuilder, BasedLambdaLayerContainerBuilder
+from .common import (
+    Credentials,
+    BasedLambdaLayerLocalBuilder,
+    BasedLambdaLayerContainerBuilder,
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -31,7 +35,10 @@ class PipBasedLambdaLayerLocalBuilder(
         super().step_01_print_info()
         self.printer(f"path_bin_pip = {self.path_bin_pip}")
 
-    def step_03_run_pip_install(self):
+    def step_03_run_pip_install(
+        self,
+        credentials: Credentials | None = None,
+    ):
         path_bin_pip = self.path_bin_pip
         dir_repo = self.path_layout.dir_repo
         with temp_cwd(dir_repo):
@@ -43,12 +50,20 @@ class PipBasedLambdaLayerLocalBuilder(
                 "-t",
                 f"{self.path_layout.dir_python}",
             ]
+            if credentials is not None:
+                args.extend(
+                    [
+                        "--index-url",
+                        credentials.pip_extra_index_url,
+                    ]
+                )
             subprocess.run(args, cwd=dir_repo, check=True)
 
 
 def build_layer_artifacts_using_pip_in_local(
     path_bin_pip: Path,
     path_pyproject_toml: Path,
+    credentials: Credentials | None = None,
     skip_prompt: bool = False,
     printer: T_PRINTER = print,
 ):
@@ -60,7 +75,7 @@ def build_layer_artifacts_using_pip_in_local(
     )
     builder.step_01_print_info()
     builder.step_02_setup_build_dir(skip_prompt=skip_prompt)
-    builder.step_03_run_pip_install()
+    builder.step_03_run_pip_install(credentials=credentials)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -79,6 +94,7 @@ def build_layer_artifacts_using_pip_in_container(
     py_ver_major: int,
     py_ver_minor: int,
     is_arm: bool,
+    credentials: Credentials | None = None,
     printer: T_PRINTER = print,
 ):
     builder = PipBasedLambdaLayerContainerBuilder(
@@ -86,6 +102,7 @@ def build_layer_artifacts_using_pip_in_container(
         py_ver_major=py_ver_major,
         py_ver_minor=py_ver_minor,
         is_arm=is_arm,
+        credentials=credentials,
         printer=printer,
     )
 
