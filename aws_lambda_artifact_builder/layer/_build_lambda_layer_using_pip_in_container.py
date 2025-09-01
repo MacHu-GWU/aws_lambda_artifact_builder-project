@@ -29,11 +29,19 @@ path_bin_pip = dir_bin / "pip"
 
 print("--- Pip install aws_lambda_artifact_builder ...")
 st = datetime.now()
-dir_aws_lambda_artifact_build_project_root = dir_here.parent.parent.parent.parent
-args = [f"{path_bin_pip}", "install", ""]
+
+# --- Dev code ---
+# This code block is used to install aws_lambda_artifact_builder
+# during local deployment and testing, we use this command to simulate
+# "pip install aws_lambda_artifact_builder"
+path_req = dir_here / "requirements-aws-lambda-artifact-builder.txt"
+args = [f"{path_bin_pip}", "install", "-r", f"{path_req}"]
 subprocess.run(args, check=True)
+# --- End dev code ---
+# --- Production code ---
 # args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.1,<1.0.0"]
 # subprocess.run(args, check=True)
+# --- End production code ---
 elapsed = (datetime.now() - st).total_seconds()
 print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 

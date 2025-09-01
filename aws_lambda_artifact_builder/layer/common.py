@@ -518,6 +518,10 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
 
     **Usage**: Not used directly - subclassed by tool-specific builders like
     PipBasedLambdaLayerLocalBuilder, PoetryBasedLambdaLayerLocalBuilder, etc.
+
+    .. seealso::
+
+        :ref:`lambda-layer-local-builder`
     """
 
     path_pyproject_toml: Path = dataclasses.field(default=REQ)

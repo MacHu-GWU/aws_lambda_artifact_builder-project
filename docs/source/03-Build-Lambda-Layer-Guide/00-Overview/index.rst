@@ -109,3 +109,26 @@ This design means that when you need to add support for a new dependency managem
 
 Lambda Layer Local Builder
 ------------------------------------------------------------------------------
+The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder` serves as the foundation for all tool-specific local build implementations. Rather than forcing each dependency management tool to reinvent the wheel, this base class captures the common workflow that every layer build process follows.
+
+Every local builder executes a consistent three-step dance, regardless of whether you're using pip, poetry, or uv. The process begins by displaying build information to give you visibility into what's happening - showing the build directory location, tool versions, and configuration paths. This transparency helps debug issues when builds don't work as expected.
+
+The second step involves setting up a pristine build environment. The builder creates a clean, temporary workspace that's isolated from your main project directory. This isolation prevents conflicts with your working files and ensures reproducible builds by starting with a known clean state every time.
+
+Finally, the actual dependency installation happens using the specific tool's commands and conventions. This is where pip builders differ from poetry builders, and where uv builders have their own unique approach. The base class provides the framework, while each tool-specific subclass implements its particular installation strategy.
+
+**The Three-Step Workflow:**
+
+- **Build Information**: Display paths, versions, and configuration details
+- **Environment Setup**: Create clean, isolated temporary build directories  
+- **Dependency Installation**: Execute tool-specific commands to install packages
+
+The beauty of this design is that you don't interact with these command classes directly. Instead, the library provides simple public API functions that hide all the complexity behind clean, minimal interfaces. These functions typically only require a few essential parameters - the path to your pip executable, your project configuration file, and perhaps some optional settings.
+
+A typical example would be :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_local`, which handles all the orchestration while presenting a straightforward function call interface.
+
+
+.. _lambda-layer-container-builder:
+
+Lambda Layer Container Builder
+------------------------------------------------------------------------------
