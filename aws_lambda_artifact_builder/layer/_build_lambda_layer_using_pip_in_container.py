@@ -52,12 +52,7 @@ from aws_lambda_artifact_builder.api import (
 
 # This path has to match the path defined in
 # :meth:`aws_lambda_artifact_builder.layer.common.LayerPathLayout.path_private_repository_credentials_in_container`
-path_credentials = (
-    dir_here
-    / "build"
-    / "lambda"
-    / "private-repository-credentials.json"
-)
+path_credentials = dir_here / "build" / "lambda" / "private-repository-credentials.json"
 
 if path_credentials.exists():
     credentials = Credentials.load(path=path_credentials)
