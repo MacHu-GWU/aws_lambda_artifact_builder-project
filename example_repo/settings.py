@@ -2,11 +2,18 @@
 
 import sys
 from pathlib import Path
+from s3pathlib import S3Path
+from boto_session_manager import BotoSesManager
 
 dir_here = Path(__file__).absolute().parent
 
 py_ver_major = sys.version_info.major
 py_ver_minor = sys.version_info.minor
+
+bsm = BotoSesManager(profile_name="esc_app_dev_us_east_1")
+bucket = f"{bsm.aws_account_alias}-{bsm.aws_region}-artifacts"
+prefix = "projects/aws_lambda_artifact_builder/lambda/"
+s3dir_lambda = S3Path(f"s3://{bucket}/{prefix}").to_dir()
 
 # ------------------------------------------------------------------------------
 # Code below is for testing and debugging only
@@ -26,7 +33,6 @@ shutil.copytree(dir_src, dir_dst)
 # ------------------------------------------------------------------------------
 from pywf_internal_proprietary.api import PyWf
 from aws_lambda_artifact_builder.api import Credentials
-
 
 path_pyproject_toml = dir_here.joinpath("pyproject.toml")
 pywf = PyWf.from_pyproject_toml(path_pyproject_toml)
