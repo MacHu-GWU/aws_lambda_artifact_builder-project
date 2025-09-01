@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import sys
 from pathlib import Path
 
 dir_here = Path(__file__).absolute().parent
 
+py_ver_major = sys.version_info.major
+py_ver_minor = sys.version_info.minor
+
 # ------------------------------------------------------------------------------
 # Code below is for testing and debugging only
+# It copy aws_lambda_artifact_builder source code to the current directory
+# to simulate the "pip install aws_lambda_artifact_builder" command
 # ------------------------------------------------------------------------------
 import shutil
 

@@ -198,7 +198,10 @@ class PipBasedLambdaLayerContainerBuilder(
     works identically in the deployed Lambda environment.
     """
     
-    def step_01_copy_build_script(self):
+    def step_01_copy_build_script(
+        self,
+        path_script: Path = path_build_lambda_layer_using_pip_in_container_script,
+    ):
         """
         Copy the pip-specific container build script to the project directory.
         
@@ -207,7 +210,7 @@ class PipBasedLambdaLayerContainerBuilder(
         with proper targeting and credential management within the container environment.
         """
         self.path_layout.copy_build_script(
-            p_src=path_build_lambda_layer_using_pip_in_container_script,
+            p_src=path_script,
             printer=self.printer,
         )
 

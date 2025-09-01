@@ -711,7 +711,10 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
             self.path_layout.path_build_lambda_layer_in_container_script_in_container,
         ]
 
-    def step_01_copy_build_script(self):
+    def step_01_copy_build_script(
+        self,
+        path_script: Path,
+    ):
         """
         Copy the tool-specific container build script to the project directory.
 
