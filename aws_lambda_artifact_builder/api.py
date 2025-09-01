@@ -14,4 +14,6 @@ from .layer.pip_builder import build_layer_artifacts_using_pip_in_local
 from .layer.pip_builder import build_layer_artifacts_using_pip_in_container
 from .layer.poetry_builder import build_layer_artifacts_using_poetry_in_local
 from .layer.poetry_builder import build_layer_artifacts_using_poetry_in_container
+from .layer.uv_builder import build_layer_artifacts_using_uv_in_local
+from .layer.uv_builder import build_layer_artifacts_using_uv_in_container
 
