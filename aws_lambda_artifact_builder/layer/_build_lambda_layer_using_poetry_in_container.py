@@ -58,12 +58,12 @@ from aws_lambda_artifact_builder.api import (
     build_layer_artifacts_using_poetry_in_local,
 )
 
+# This path has to match the path defined in
+# :meth:`aws_lambda_artifact_builder.layer.common.LayerPathLayout.path_private_repository_credentials_in_container`
 path_credentials = (
     dir_here
     / "build"
     / "lambda"
-    / "layer"
-    / "repo"
     / "private-repository-credentials.json"
 )
 
@@ -75,5 +75,6 @@ else:
 build_layer_artifacts_using_poetry_in_local(
     path_bin_poetry=path_bin_poetry,
     path_pyproject_toml=dir_here / "pyproject.toml",
+    credentials=credentials,
     skip_prompt=True,
 )

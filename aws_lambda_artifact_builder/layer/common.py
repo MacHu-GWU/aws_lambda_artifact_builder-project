@@ -30,7 +30,7 @@ from func_args.api import BaseFrozenModel, REQ
 from ..typehint import T_PRINTER
 from ..constants import ZFILL
 from ..imports import S3Path
-from ..utils import clean_build_directory
+from ..utils import write_bytes, clean_build_directory
 
 
 @dataclasses.dataclass(frozen=True)
@@ -74,7 +74,8 @@ class Credentials:
         :param path: Path to the output JSON file
         """
         data = dataclasses.asdict(self)
-        path.write_text(json.dumps(data, indent=4), encoding="utf-8")
+        b = json.dumps(data, indent=4).encode("utf-8")
+        write_bytes(path=path, content=b)
 
     @classmethod
     def load(cls, path: Path):
@@ -134,11 +135,22 @@ class LayerPathLayout(BaseFrozenModel):
         return path
 
     @property
+    def dir_build_lambda(self) -> Path:
+        """
+        The build directory for Lambda-related artifacts.
+        """
+        return self.dir_project_root / "build" / "lambda"
+
+    @property
     def dir_build_lambda_layer(self) -> Path:
         """
         The build directory for Lambda layer build.
+
+        .. important::
+
+            This directory is cleared before each build to ensure a clean environment.
         """
-        return self.dir_project_root / "build" / "lambda" / "layer"
+        return self.dir_build_lambda / "layer"
 
     @property
     def path_build_lambda_layer_zip(self) -> Path:
@@ -168,9 +180,15 @@ class LayerPathLayout(BaseFrozenModel):
 
         This script contains the build logic that will be executed inside
         the Docker container to install dependencies.
+
+        .. important::
+
+            This path has to be outside the :meth:`dir_build_lambda_layer` folder,
+            because the :meth:`dir_build_lambda_layer` folder is cleared before each
+            ``build_lambda_layer_***_in_local(...)`` function call, but this script
+            must persist before that.
         """
         return self.dir_project_root / "build_lambda_layer_in_container.py"
-        # return self.dir_repo / "build_lambda_layer_in_container.py"
 
     @property
     def path_build_lambda_layer_in_container_script_in_container(self) -> str:
@@ -221,8 +239,15 @@ class LayerPathLayout(BaseFrozenModel):
     def path_private_repository_credentials_in_local(self) -> Path:
         """
         The private repository credentials file path.
+
+        .. important::
+
+            This path has to be outside the :meth:`dir_build_lambda_layer` folder,
+            because the :meth:`dir_build_lambda_layer` folder is cleared before each
+            ``build_lambda_layer_***_in_local(...)`` function call, but this script
+            must persist before that.
         """
-        return self.dir_repo / "private-repository-credentials.json"
+        return self.dir_build_lambda / "private-repository-credentials.json"
 
     @property
     def path_private_repository_credentials_in_container(self) -> str:
@@ -696,6 +721,7 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         if isinstance(self.credentials, Credentials) is False:
             return
         p = self.path_layout.path_private_repository_credentials_in_local
+        self.printer(f"Dump private repository credentials to {p}")
         self.credentials.dump(path=p)
 
     def step_03_docker_run(self):
