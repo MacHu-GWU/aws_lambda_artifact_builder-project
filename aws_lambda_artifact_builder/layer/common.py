@@ -51,7 +51,7 @@ class Credentials:
     def normalized_index_url(self) -> str:
         index_url = self.index_url
         if index_url.startswith("https://"):
-            index_url = index_url[len("https://"):]
+            index_url = index_url[len("https://") :]
         if index_url.endswith("/"):
             index_url = index_url[:-1]
         if index_url.endswith("/simple"):
@@ -65,7 +65,20 @@ class Credentials:
 
         :return: URL in format https://username:password@hostname/simple/
         """
-        return f"https://{self.username}:{self.password}@{self.normalized_index_url}"
+        return f"https://{self.username}:{self.password}@{self.normalized_index_url}/simple/"
+
+    def dump(self, path: Path):
+        """
+        Save credentials to a JSON file.
+
+        :param path: Path to the output JSON file
+        """
+        data = dataclasses.asdict(self)
+        path.write_text(json.dumps(data, indent=4), encoding="utf-8")
+
+    @classmethod
+    def load(cls, path: Path):
+        return cls(**json.loads(path.read_text(encoding="utf-8")))
 
 
 @dataclasses.dataclass(frozen=True)
@@ -681,10 +694,8 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         """
         if isinstance(self.credentials, Credentials) is False:
             return
-
-        secret_data = dataclasses.asdict(self.credentials)
         p = self.path_layout.path_private_repository_credentials_in_local
-        p.write_text(json.dumps(secret_data, indent=4), encoding="utf-8")
+        self.credentials.dump(path=p)
 
     def step_03_docker_run(self):
         """

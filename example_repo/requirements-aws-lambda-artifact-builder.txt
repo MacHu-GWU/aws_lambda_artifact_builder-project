@@ -1,0 +1,3 @@
+func-args==1.0.1 ; python_version >= "3.10" and python_version < "4.0"
+soft-deps==0.1.1 ; python_version >= "3.10" and python_version < "4.0"
+tomli==2.2.1 ; python_version >= "3.10" and python_full_version <= "3.11.0a6"

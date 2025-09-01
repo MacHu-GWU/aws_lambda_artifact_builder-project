@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+
+"""
+
 from pathlib import Path
 from datetime import datetime
 
@@ -16,12 +20,12 @@ path_pyproject_toml = dir_here / "pyproject.toml"
 
 # Build the lambda layer artifacts
 st = datetime.now()
-aws_lambda_artifact_builder.build_layer_artifacts_using_pip_in_local(
-    path_bin_pip=path_bin_pip,
+aws_lambda_artifact_builder.build_layer_artifacts_using_pip_in_container(
     path_pyproject_toml=path_pyproject_toml,
+    py_ver_major=3,
+    py_ver_minor=11,
     credentials=credentials,
-    # credentials=None, # Use this if you don't need to access a private repository
-    skip_prompt=True,
+    is_arm=False,
 )
 elapsed = (datetime.now() - st).total_seconds()
 print(f"Total elapsed: {elapsed:.2f} seconds")
