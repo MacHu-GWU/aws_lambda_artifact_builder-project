@@ -74,92 +74,59 @@ Assuming your Git repository root is located at ``${dir_project_root}/``, the La
 
 Local Builder and Container Builder
 ------------------------------------------------------------------------------
-The library provides two complementary approaches to building Lambda layers, each designed to address different development environments and runtime compatibility needs.
+The library provides two approaches for building Lambda layers:
 
-The core challenge in Lambda layer creation is ensuring that dependencies built on your development machine will work correctly in the AWS Lambda runtime environment. Since most developers work on macOS or Windows laptops while Lambda runs on Linux, we need strategies to bridge this compatibility gap.
+- **Local Builders** (:class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder`): Fast builds directly on your machine, ideal for Linux environments
+- **Container Builders** (:class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder`): Docker-based builds ensuring AWS Lambda runtime compatibility across platforms
 
-**The Local Builder Approach**
-
-The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder` assumes your host environment is already compatible with AWS Lambda runtime - essentially, you're working on a Linux system or one that closely matches Lambda's environment. This approach installs dependencies directly using your local tools like pip, poetry, or uv, then packages them into the layer structure.
-
-The trade-off is speed and simplicity for compatibility assurance. If you're on the right platform, local builds are significantly faster since there's no Docker overhead involved.
-
-**The Container Builder Solution**
-
-The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder` addresses the reality that most developers don't work on Linux. Instead of trying to make your Mac or Windows machine compatible with Lambda, it brings Lambda's environment to you through Docker containers.
-
-Container builders execute the build process inside official AWS SAM build images that precisely match the Lambda runtime environment. This approach guarantees that what you build locally will work identically when deployed to Lambda, regardless of your host operating system or architecture.
-
-**How Container Builders Work**
-
-Rather than duplicating all the build logic, container builders wrap the existing local builder logic. The process works by packaging the local build steps into Python scripts, then executing those scripts inside the appropriate Docker container. Meanwhile, the container builder handles the orchestration:
-
-- Mounting your project files and credentials into the container
-- Configuring the container environment for authentication  
-- Managing the Docker lifecycle and volume mappings
-
-**The Design Benefits**
-
-This separation creates a clean architectural boundary that makes the entire system more maintainable. The core build logic lives in local builders where it's easy to test and debug directly on Linux machines. The container builders are essentially thin wrappers that handle Docker orchestration without duplicating business logic.
-
-This design means that when you need to add support for a new dependency management tool, you primarily focus on the local builder implementation. The container wrapper comes almost for free, inheriting all the functionality while adding cross-platform compatibility.
+Container builders execute local builder logic inside AWS SAM build images, guaranteeing platform compatibility without duplicating build code.
 
 
 .. _lambda-layer-local-builder:
 
 Lambda Layer Local Builder
 ------------------------------------------------------------------------------
-The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder` serves as the foundation for all tool-specific local build implementations. Rather than forcing each dependency management tool to reinvent the wheel, this base class captures the common workflow that every layer build process follows.
+Local builders follow a standard three-step workflow implemented by :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder`:
 
-Every local builder executes a consistent three-step dance, regardless of whether you're using pip, poetry, or uv. The process begins by displaying build information to give you visibility into what's happening - showing the build directory location, tool versions, and configuration paths. This transparency helps debug issues when builds don't work as expected.
+1. **Build Information**: :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder.step_01_print_info`
+2. **Environment Setup**: :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder.step_02_setup_build_dir`
+3. **Tool-Specific Installation**: Implemented by subclasses
 
-The second step involves setting up a pristine build environment. The builder creates a clean, temporary workspace that's isolated from your main project directory. This isolation prevents conflicts with your working files and ensures reproducible builds by starting with a known clean state every time.
+**Implementation Example**
 
-Finally, the actual dependency installation happens using the specific tool's commands and conventions. This is where pip builders differ from poetry builders, and where uv builders have their own unique approach. The base class provides the framework, while each tool-specific subclass implements its particular installation strategy.
+See :class:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder` which demonstrates:
 
-**The Three-Step Workflow:**
+- :meth:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder.step_03_prepare_poetry_stuff`
+- :meth:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder.step_04_run_poetry_install`
 
-- **Build Information**: Display paths, versions, and configuration details
-- **Environment Setup**: Create clean, isolated temporary build directories  
-- **Dependency Installation**: Execute tool-specific commands to install packages
+**Public API**
 
-The beauty of this design is that you don't interact with these command classes directly. Instead, the library provides simple public API functions that hide all the complexity behind clean, minimal interfaces. These functions typically only require a few essential parameters - the path to your pip executable, your project configuration file, and perhaps some optional settings.
-
-A typical example would be :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_local`, which handles all the orchestration while presenting a straightforward function call interface.
+Use high-level functions like :func:`~aws_lambda_artifact_builder.layer.poetry_builder.build_layer_artifacts_using_poetry_in_local` instead of command classes directly.
 
 
 .. _lambda-layer-container-builder:
 
 Lambda Layer Container Builder
 ------------------------------------------------------------------------------
-The :class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder` addresses the fundamental challenge of cross-platform compatibility in Lambda development. While local builders are fast and convenient for Linux environments, most developers work on macOS or Windows systems where native dependency builds may not match the AWS Lambda runtime environment.
+Container builders execute local builder logic inside Docker containers to ensure Lambda runtime compatibility across platforms.
 
-Container builders solve this compatibility gap by leveraging Docker to create an exact replica of the AWS Lambda execution environment on your local machine. Instead of hoping that packages built on your macOS laptop will work on Lambda's Linux runtime, container builders guarantee compatibility by building within the same operating system, architecture, and Python environment that Lambda uses.
+**Three-Step Process**
 
-The architecture is elegantly simple yet powerful. Rather than reimplementing build logic for containers, the container builder orchestrates the execution of existing local builder logic inside Docker containers. This design leverages the AWS SAM (Serverless Application Model) build images, which are official Docker images that precisely mirror the Lambda runtime environment.
+:class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder` orchestrates:
 
-**The Container Build Process**
+1. **Script Setup**: :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder.step_01_copy_build_script`
+2. **Credential Management**: :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder.step_02_setup_private_repository_credential`
+3. **Docker Execution**: :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder.step_03_docker_run`
 
-When you initiate a container build, the system follows a three-step orchestration pattern. First, it prepares the build environment by copying necessary build scripts and configuration files into your project directory. These scripts contain the same dependency installation logic used by local builders, packaged for execution inside the container.
+**Container Script Example**
 
-Next comes credential management, a critical step for accessing private repositories. The container builder serializes your authentication credentials to a JSON file and carefully mounts it into the container environment. This allows tools like pip, poetry, and uv running inside the container to authenticate with private PyPI servers or corporate repositories just as they would in local builds.
+The build script `_build_lambda_layer_using_poetry_in_container.py <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/aws_lambda_artifact_builder/layer/_build_lambda_layer_using_poetry_in_container.py>`_ demonstrates containerized execution:
 
-Finally, the Docker execution phase begins. The container builder constructs the appropriate Docker command, mounting your project directory and executing the build script inside the SAM build image. All dependency installation happens within this controlled environment, ensuring that compiled extensions, binary dependencies, and platform-specific packages are built for the correct target architecture.
+- Environment validation (ensures ``/var/task`` location)
+- Tool installation within container
+- Credential loading via :meth:`~aws_lambda_artifact_builder.layer.common.Credentials.load`
+- Local builder execution
 
-**Architecture Benefits**
+**Public API**
 
-This design creates several important advantages. The separation between local build logic and container orchestration means that adding support for a new dependency management tool requires minimal container-specific code. The core installation logic remains in the local builder where it's easy to test and debug, while the container builder provides a thin wrapper that handles Docker lifecycle management.
-
-Authentication flows seamlessly between host and container environments. Your local credentials for private repositories work transparently inside containers without requiring manual configuration or environment variable management. The credential serialization system ensures that sensitive authentication tokens never appear in Docker logs or container images.
-
-**Real-World Benefits** 
-
-The practical impact is significant for teams working with compiled dependencies like NumPy, SciPy, or Pandas. These packages often include C extensions that must be compiled for the target platform. Building these packages on macOS produces binaries incompatible with Linux Lambda runtimes, leading to import errors and runtime failures.
-
-Container builders eliminate these compatibility issues entirely. When you build a layer containing NumPy on your macOS laptop using a container builder, the actual compilation happens inside a Linux container matching Lambda's exact environment. The resulting layer contains Linux-compatible binaries that work perfectly in Lambda, regardless of your development platform.
-
-**Performance Considerations**
-
-While container builds add Docker overhead compared to local builds, this cost is typically offset by the eliminated debugging time from compatibility issues. The container startup time is usually measured in seconds, while troubleshooting a layer that works locally but fails in Lambda can consume hours or days of development time.
-
-The container builder's design also enables advanced optimizations. Since the build happens in an isolated environment, you can safely run parallel builds for different Python versions or architectures without conflicts. Teams can even cache container build results across developers, sharing the performance benefits of successful builds.
+Use functions like :func:`~aws_lambda_artifact_builder.layer.poetry_builder.build_layer_artifacts_using_poetry_in_container` for containerized builds.

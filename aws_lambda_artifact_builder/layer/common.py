@@ -711,6 +711,15 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
             self.path_layout.path_build_lambda_layer_in_container_script_in_container,
         ]
 
+    def step_01_copy_build_script(self):
+        """
+        Copy the tool-specific container build script to the project directory.
+
+        Subclasses must implement this method to provide the appropriate
+        build script that will be executed inside the Docker container.
+        """
+        raise NotImplementedError
+
     def step_02_setup_private_repository_credential(self):
         """
         Configure private repository authentication (optional).

@@ -1,11 +1,23 @@
 # -*- coding: utf-8 -*-
 
 """
-Build lambda layer and create a zip file.
+Container-based Lambda layer build script for uv dependency management.
 
-**IMPORTANT**
+This script follows the same container orchestration pattern as the pip variant.
+For detailed documentation on the container build architecture, execution flow,
+and integration with the builder classes, see:
 
-THIS SHELL SCRIPT HAS TO BE EXECUTED IN THE CONTAINER, NOT IN THE HOST MACHINE.
+https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/aws_lambda_artifact_builder/layer/_build_lambda_layer_using_pip_in_container.py
+
+**UV-Specific Workflow**
+
+This script:
+
+1. Installs uv within the container environment
+2. Delegates to :func:`~aws_lambda_artifact_builder.layer.uv_builder.build_layer_artifacts_using_uv_in_local`
+3. Executes :class:`~aws_lambda_artifact_builder.layer.uv_builder.UVBasedLambdaLayerLocalBuilder` workflow
+
+**EXECUTION SAFETY**: THIS SCRIPT MUST BE EXECUTED IN THE CONTAINER, NOT ON THE HOST MACHINE.
 """
 
 import sys
@@ -38,6 +50,7 @@ print("--- Pip install aws_lambda_artifact_builder ...")
 st = datetime.now()
 
 # --- Dev code ---
+# TODO comment this out in production
 # This code block is used to install aws_lambda_artifact_builder
 # during local deployment and testing, we use this command to simulate
 # "pip install aws_lambda_artifact_builder"
@@ -46,6 +59,7 @@ args = [f"{path_bin_pip}", "install", "-r", f"{path_req}"]
 subprocess.run(args, check=True)
 # --- End dev code ---
 # --- Production code ---
+# TODO uncomment this in production
 # args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.1,<1.0.0"]
 # subprocess.run(args, check=True)
 # --- End production code ---
