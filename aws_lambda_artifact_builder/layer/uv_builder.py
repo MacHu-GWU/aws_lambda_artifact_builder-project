@@ -71,6 +71,7 @@ class UVBasedLambdaLayerLocalBuilder(
                 "--frozen",
                 "--no-dev",
                 "--no-install-project",
+                "--link-mode=copy",
             ]
             subprocess.run(args, cwd=dir_repo, check=True)
 
