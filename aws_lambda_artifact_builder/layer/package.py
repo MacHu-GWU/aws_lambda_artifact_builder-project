@@ -5,7 +5,6 @@ Lambda layer packaging implementation - Step 2 of the layer creation workflow.
 
 This module handles the packaging phase of AWS Lambda layer creation, transforming
 the built dependencies into a properly structured zip file ready for deployment.
-It represents the second step in the complete layer workflow:
 """
 
 from pathlib import Path
