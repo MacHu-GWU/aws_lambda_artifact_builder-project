@@ -184,7 +184,7 @@ class LayerPathLayout(BaseFrozenModel):
         :meth:`dir_python`, AWS Lambda required ``python`` subdirectory.
     """
 
-    path_pyproject_toml: Path = dataclasses.field()
+    path_pyproject_toml: Path = dataclasses.field(default=REQ)
 
     @property
     def dir_project_root(self) -> Path:
@@ -192,6 +192,31 @@ class LayerPathLayout(BaseFrozenModel):
         Project root directory, usually the Git repository root.
         """
         return self.path_pyproject_toml.parent
+
+    @cached_property
+    def dir_venv(self) -> Path:
+        return self.dir_project_root / ".venv"
+
+    @cached_property
+    def path_venv_bin_python(self) -> Path:
+        return self.dir_venv / "bin" / "python"
+
+    @cached_property
+    def venv_python_version(self) -> tuple[int, int, int]:
+        args = [f"{self.path_venv_bin_python}", "--version"]
+        result = subprocess.run(args, capture_output=True, text=True, check=True)
+        s = result.stdout
+        major, minor, micro = s.split()[1].split(".")
+        major = int(major)
+        minor = int(minor)
+        micro = int(micro)
+        return major, minor, micro
+
+    @cached_property
+    def dir_venv_site_packages(self) -> Path:
+        # TODO: support Windows
+        major, minor, micro = self.venv_python_version
+        return self.dir_venv / "lib" / f"python{major}.{minor}" / "site-packages"
 
     def get_path_in_container(self, path_in_local: Path) -> str:
         """

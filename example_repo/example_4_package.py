@@ -1,30 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from pathlib import Path
-from settings import py_ver_major, py_ver_minor
-from aws_lambda_artifact_builder.layer.package import (
-    move_to_dir_python,
-    create_layer_zip_file,
-)
+from settings import teardown_aws_lambda_artifact_builder, settings
+import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
 
-# Current project directory
-dir_here = Path(__file__).absolute().parent
-dir_site_packages = (
-    dir_here
-    / "build"
-    / "lambda"
-    / "layer"
-    / "repo"
-    / ".venv"
-    / "lib"
-    / f"python{py_ver_major}.{py_ver_minor}"
-    / "site-packages"
+LayerBuildToolEnum = aws_lambda_artifact_builder.LayerBuildToolEnum
+
+zipper = aws_lambda_artifact_builder.LambdaLayerZipper(
+    path_pyproject_toml=settings.path_pyproject_toml,
+    # build_tool=LayerBuildToolEnum.pip,
+    # build_tool=LayerBuildToolEnum.poetry,
+    build_tool=LayerBuildToolEnum.uv,
 )
-path_pyproject_toml = dir_here.joinpath("pyproject.toml")
-move_to_dir_python(
-    dir_site_packages=dir_site_packages,
-    path_pyproject_toml=path_pyproject_toml,
-)
-create_layer_zip_file(
-    path_pyproject_toml=path_pyproject_toml,
-)
+zipper.run()
+
+teardown_aws_lambda_artifact_builder()
