@@ -30,4 +30,3 @@ from .layer.publish import LambdaLayerVersionPublisher
 from .vendor.better_pathlib import temp_cwd
 from .vendor.hashes import hashes
 from .vendor.timer import DateTimeTimer
-

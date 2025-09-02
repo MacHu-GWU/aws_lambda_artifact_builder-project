@@ -4,11 +4,13 @@
 This module provides utilities for building, packaging, and uploading AWS Lambda source artifacts.
 
 It handles the complete lifecycle of Lambda source deployment packages:
+
 1. Building source artifacts using pip from setup.py or pyproject.toml
 2. Creating compressed zip archives of the built source
 3. Uploading artifacts to S3 with proper versioning and metadata
 
 Key Assumptions:
+
 1. **Pip-based packaging**: Uses `pip install` to build source artifacts, ensuring proper 
    Python package installation and module discovery within the Lambda runtime environment.
 2. **Code folder structure**: Assumes the Lambda entry point (lambda_function.py) is included

@@ -5,6 +5,36 @@ from aws_lambda_artifact_builder import api
 
 def test():
     _ = api
+    _ = api.S3MetadataKeyEnum
+    _ = api.LayerBuildToolEnum
+    _ = api.write_bytes
+    _ = api.is_match
+    _ = api.copy_source_for_lambda_deployment
+    _ = api.prompt_to_confirm_before_remove_dir
+    _ = api.clean_build_directory
+    _ = api.build_source_artifacts_using_pip
+    _ = api.create_source_zip
+    _ = api.upload_source_artifacts
+    _ = api.Credentials
+    _ = api.LayerPathLayout
+    _ = api.LayerS3Layout
+    _ = api.LayerManifestManager
+    _ = api.BasedLambdaLayerLocalBuilder
+    _ = api.BasedLambdaLayerContainerBuilder
+    _ = api.PipBasedLambdaLayerLocalBuilder
+    _ = api.PipBasedLambdaLayerContainerBuilder
+    _ = api.PoetryBasedLambdaLayerLocalBuilder
+    _ = api.PoetryBasedLambdaLayerContainerBuilder
+    _ = api.UVBasedLambdaLayerLocalBuilder
+    _ = api.UVBasedLambdaLayerContainerBuilder
+    _ = api.move_to_dir_python
+    _ = api.create_layer_zip_file
+    _ = api.LambdaLayerZipper
+    _ = api.upload_layer_zip_to_s3
+    _ = api.LambdaLayerVersionPublisher
+    _ = api.temp_cwd
+    _ = api.hashes
+    _ = api.DateTimeTimer
 
 
 if __name__ == "__main__":

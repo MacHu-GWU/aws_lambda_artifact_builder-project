@@ -52,7 +52,7 @@ The build process expects a standardized project structure centered around ``pyp
 
 The library provides two build execution environments, each with distinct advantages:
 
-**Local Builds** (:class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerLocalBuilder`)
+**Local Builds** (:class:`~aws_lambda_artifact_builder.layer.builder.BasedLambdaLayerLocalBuilder`)
     Execute dependency installation directly on your host machine. Best suited for:
     
     - **Development Workflows**: Fast iteration during layer development
@@ -62,7 +62,7 @@ The library provides two build execution environments, each with distinct advant
     Local builds offer maximum speed but may encounter platform compatibility issues when 
     dependencies include native extensions compiled for different architectures.
 
-**Container Builds** (:class:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder`)
+**Container Builds** (:class:`~aws_lambda_artifact_builder.layer.builder.BasedLambdaLayerContainerBuilder`)
     Execute builds inside official AWS SAM Docker containers that mirror Lambda's runtime. Ideal for:
     
     - **Production Deployment**: Ensuring exact Lambda runtime compatibility

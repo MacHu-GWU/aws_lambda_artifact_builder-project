@@ -6,7 +6,7 @@
 .. image:: https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/actions/workflows/main.yml/badge.svg
     :target: https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/actions?query=workflow:CI
 
-.. image:: https://codecov.io/gh/MacHu-GWU/aws_lambda_artifact_builder-project/branch/main/graph/badge.svg
+.. .. image:: https://codecov.io/gh/MacHu-GWU/aws_lambda_artifact_builder-project/branch/main/graph/badge.svg
     :target: https://codecov.io/gh/MacHu-GWU/aws_lambda_artifact_builder-project
 
 .. image:: https://img.shields.io/pypi/v/aws-lambda-artifact-builder.svg
