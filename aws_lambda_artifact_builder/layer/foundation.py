@@ -416,7 +416,11 @@ class LayerPathLayout(BaseFrozenModel):
         printer(f"Copy {p_src} to {p_dst}")
         shutil.copy(p_src, p_dst)
 
-    def copy_build_script(self, p_src: Path, printer: T_PRINTER = print):
+    def copy_build_script(
+        self,
+        p_src: Path,
+        printer: T_PRINTER = print,
+    ):
         """
         Copy containerized build script to the project directory.
 
@@ -668,7 +672,20 @@ class LayerS3Layout:
 
 
 @dataclasses.dataclass(frozen=True)
-class LayerManifestManager(BaseFrozenModel):
+class BaseLogger(BaseFrozenModel):
+    verbose: bool = dataclasses.field(default=True)
+    printer: T_PRINTER = dataclasses.field(default=print)
+
+    def log(self, msg: str):
+        """
+        Log a message if verbosity is enabled.
+        """
+        if self.verbose:
+            self.printer(msg)
+
+
+@dataclasses.dataclass(frozen=True)
+class LayerManifestManager(BaseLogger):
     """
     Manages dependency manifest files for Lambda layers.
     """
@@ -677,8 +694,6 @@ class LayerManifestManager(BaseFrozenModel):
     s3dir_lambda: "S3Path" = dataclasses.field(default=REQ)
     layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
     s3_client: "S3Client" = dataclasses.field(default=REQ)
-    verbose: bool = dataclasses.field(default=True)
-    printer: T_PRINTER = dataclasses.field(default=print)
 
     @cached_property
     def path_layout(self) -> LayerPathLayout:

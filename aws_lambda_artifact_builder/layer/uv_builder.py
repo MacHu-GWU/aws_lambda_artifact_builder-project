@@ -57,7 +57,7 @@ class UVBasedLambdaLayerLocalBuilder(
         Display uv-specific build information.
         """
         super().step_1_1_print_info()
-        self.printer(f"path_bin_uv = {self.path_bin_uv}")
+        self.log(f"path_bin_uv = {self.path_bin_uv}")
 
     def step_2_prepare_environment(self):
         super().step_2_prepare_environment()
@@ -70,13 +70,15 @@ class UVBasedLambdaLayerLocalBuilder(
         Copies pyproject.toml and uv.lock to ensure reproducible builds
         with exact dependency versions as resolved by UV.
         """
-        self.path_layout.copy_pyproject_toml(printer=self.printer)
-        self.path_layout.copy_uv_lock(printer=self.printer)
+        self.log("--- Step 2.2 - Prepare UV stuff")
+        self.path_layout.copy_pyproject_toml(printer=self.log)
+        self.path_layout.copy_uv_lock(printer=self.log)
 
     def step_3_execute_build(self):
         """
         Perform Poetry-based Lambda layer build step.
         """
+        super().step_3_execute_build()
         self.step_3_1_uv_login()
         self.step_3_2_run_uv_sync()
 
@@ -84,11 +86,13 @@ class UVBasedLambdaLayerLocalBuilder(
         """
         Configure UV authentication via environment variables.
         """
+        self.log("--- Step 3.1 - Setting up UV credentials")
         if self.credentials is not None:
-            self.printer("--- Setting up UV credentials ...")
             key_user, key_pass = self.credentials.uv_login()
-            self.printer(f"Set environment variable {key_user}")
-            self.printer(f"Set environment variable {key_pass}")
+            self.log(f"Set environment variable {key_user}")
+            self.log(f"Set environment variable {key_pass}")
+        else:
+            self.log("No UV credentials provided, skipping UV login step")
 
     def step_3_2_run_uv_sync(self):
         """
@@ -98,10 +102,10 @@ class UVBasedLambdaLayerLocalBuilder(
         development dependencies, and --no-install-project to exclude the project itself.
         Uses --link-mode=copy for Lambda layer compatibility.
         """
+        self.log("--- Step 3.2 - Run 'uv sync'")
         path_bin_uv = self.path_bin_uv
         dir_repo = self.path_layout.dir_repo
         with temp_cwd(dir_repo):
-            self.printer("--- Run 'uv sync' ...")
             args = [
                 f"{path_bin_uv}",
                 "sync",

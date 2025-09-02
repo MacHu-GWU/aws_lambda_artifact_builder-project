@@ -9,16 +9,15 @@ import subprocess
 from pathlib import Path
 from functools import cached_property
 
-from func_args.api import BaseFrozenModel, REQ
+from func_args.api import REQ
 
-from ..typehint import T_PRINTER
 from ..constants import LayerBuildToolEnum
 
-from .foundation import Credentials, LayerPathLayout
+from .foundation import Credentials, LayerPathLayout, BaseLogger
 
 
 @dataclasses.dataclass(frozen=True)
-class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
+class BasedLambdaLayerLocalBuilder(BaseLogger):
     """
     Base command class for local Lambda layer builds.
 
@@ -54,7 +53,6 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
     credentials: Credentials | None = dataclasses.field(default=None)
     skip_prompt: bool = dataclasses.field(default=False)
-    printer: T_PRINTER = dataclasses.field(default=print)
 
     _build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
 
@@ -75,6 +73,7 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
         Runs all four build phases in order. Override individual steps
         or call steps directly for custom workflows.
         """
+        self.log("--- Start local Lambda layer build workflow")
         self.step_1_preflight_check()
         self.step_2_prepare_environment()
         self.step_3_execute_build()
@@ -84,24 +83,27 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
         """
         Perform read-only validation of build environment and project configuration.
         """
+        self.log("--- Step 1 - Flight Check")
         self.step_1_1_print_info()
 
     def step_2_prepare_environment(self):
         """
         Set up necessary prerequisites for the build process.
         """
+        self.log("--- Step 2 - Prepare Environment")
         self.step_2_1_setup_build_dir()
 
     def step_3_execute_build(self):
         """
         Execute dependency manager-specific installation commands (pip/poetry/uv).
         """
-        raise NotImplementedError
+        self.log("--- Step 3 - Execute Build")
 
     def step_4_finalize_artifacts(self):
         """
         Transform build output into Lambda layer's required python/ directory structure.
         """
+        self.log("--- Step 4 - Finalize Artifacts")
 
     # --- step_1_preflight_check sub-steps
     def step_1_1_print_info(self):
@@ -111,11 +113,12 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
         Provides visibility into the build process by showing which tool
         is being used and where artifacts will be created.
         """
-        self.printer(f"--- Build Lambda layer artifacts using {self._build_tool.value} ...")
+        self.log(f"--- Step 1.1 - Print Build Info")
+        self.log(f"build tool = {self._build_tool.value}")
         p = self.path_pyproject_toml
-        self.printer(f"path_pyproject_toml = {p}")
+        self.log(f"path_pyproject_toml = {p}")
         p = self.path_layout.dir_build_lambda_layer
-        self.printer(f"dir_build_lambda_layer = {p}")
+        self.log(f"dir_build_lambda_layer = {p}")
 
     # --- step_2_prepare_environment sub-steps
     def step_2_1_setup_build_dir(self):
@@ -127,17 +130,19 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
 
         :param skip_prompt: If True, automatically remove existing build directory
         """
+        self.log(f"--- Step 2.1 - Setup Build Directory")
         dir = self.path_layout.dir_build_lambda_layer
-        self.printer(f"--- Clean existing build directory: {dir}")
+        self.log(f"--- Clean existing build directory: {dir}")
         self.path_layout.clean(skip_prompt=self.skip_prompt)
         self.path_layout.mkdirs()
 
     # --- step_3_execute_build sub-steps
+
     # --- step_4_finalize_artifacts sub-steps
 
 
 @dataclasses.dataclass(frozen=True)
-class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
+class BasedLambdaLayerContainerBuilder(BaseLogger):
     """
     Base command class for containerized Lambda layer builds.
 
@@ -184,7 +189,6 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
     is_arm: bool = dataclasses.field(default=REQ)
     path_script: Path = dataclasses.field(default=REQ)
     credentials: Credentials | None = dataclasses.field(default=None)
-    printer: T_PRINTER = dataclasses.field(default=print)
 
     @cached_property
     def path_layout(self) -> LayerPathLayout:
@@ -286,6 +290,7 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         Runs all four container build phases in order. Override individual
         steps or call steps directly for custom workflows.
         """
+        self.log("--- Start containerized Lambda layer build workflow")
         self.step_1_preflight_check()
         self.step_2_prepare_environment()
         self.step_3_execute_build()
@@ -295,11 +300,13 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         """
         Validate Docker environment and container build prerequisites.
         """
+        self.log("--- Step 1 - Preflight Check")
 
     def step_2_prepare_environment(self):
         """
         Set up container build prerequisites including scripts and credentials.
         """
+        self.log("--- Step 2 - Prepare Environment")
         self.step_2_1_copy_build_script()
         self.step_2_2_setup_private_repository_credential()
 
@@ -307,12 +314,14 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         """
         Run Docker container with AWS SAM build image for dependency installation.
         """
+        self.log("--- Step 3 - Execute Build")
         self.step_3_1_docker_run()
 
     def step_4_finalize_artifacts(self):
         """
         Clean up temporary files and validate container build results.
         """
+        self.log("--- Step 4 - Finalize Artifacts")
 
     # --- step_1_preflight_check sub-steps
     # --- step_2_prepare_environment sub-steps
@@ -323,9 +332,10 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         Subclasses must implement this method to provide the appropriate
         build script that will be executed inside the Docker container.
         """
+        self.log("--- Step 2.1 - Copy Build Script")
         self.path_layout.copy_build_script(
             p_src=self.path_script,
-            printer=self.printer,
+            printer=self.log,
         )
 
     def step_2_2_setup_private_repository_credential(self):
@@ -335,10 +345,12 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         Subclasses can override this method to set up credentials for
         accessing private PyPI servers or corporate package repositories.
         """
+        self.log(f"--- Step 2.2 - Setup Private Repository Credential")
         if isinstance(self.credentials, Credentials) is False:
+            self.log("No private repository credentials provided, skip.")
             return
         p = self.path_layout.path_private_repository_credentials_in_local
-        self.printer(f"Dump private repository credentials to {p}")
+        self.log(f"Dump private repository credentials to {p}")
         self.credentials.dump(path=p)
 
     # --- step_3_execute_build sub-steps
@@ -349,6 +361,7 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         Runs the configured Docker command to build the Lambda layer
         inside the container environment.
         """
+        self.log(f"--- Step 3.1 - Docker Run")
         subprocess.run(self.docker_run_args)
 
     # --- step_4_finalize_artifacts sub-steps
