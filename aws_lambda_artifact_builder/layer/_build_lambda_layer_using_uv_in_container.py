@@ -113,6 +113,7 @@ else:
 # the AWS Lambda runtime environment, ensuring binary compatibility
 
 # command execution workflow
+print("--- Starting uv-based layer build inside container ...")
 builder = UVBasedLambdaLayerLocalBuilder(
     path_bin_uv=path_bin_uv,
     path_pyproject_toml=dir_here / "pyproject.toml",
@@ -120,4 +121,4 @@ builder = UVBasedLambdaLayerLocalBuilder(
     skip_prompt=True,
 )
 builder.run()
-print("--- Container-based layer build completed successfully!")
+print("Container-based layer build completed successfully!")

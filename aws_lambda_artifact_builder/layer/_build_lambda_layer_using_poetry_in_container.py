@@ -115,6 +115,7 @@ else:
 # the AWS Lambda runtime environment, ensuring binary compatibility
 
 # command execution workflow
+print("--- Starting poetry-based layer build inside container ...")
 builder = PoetryBasedLambdaLayerLocalBuilder(
     path_bin_poetry=path_bin_poetry,
     path_pyproject_toml=dir_here / "pyproject.toml",
@@ -122,4 +123,4 @@ builder = PoetryBasedLambdaLayerLocalBuilder(
     skip_prompt=True,
 )
 builder.run()
-print("--- Container-based layer build completed successfully!")
+print("Container-based layer build completed successfully!")
