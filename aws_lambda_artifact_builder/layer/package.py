@@ -155,6 +155,36 @@ def create_layer_zip_file(
 
 @dataclasses.dataclass(frozen=True)
 class LambdaLayerZipper(BaseFrozenModel):
+    """
+    Command class for Lambda layer packaging and zip file creation.
+
+    This class handles the second phase of Lambda layer creation: transforming build artifacts
+    into a properly structured, compressed zip file ready for AWS deployment. It bridges the
+    gap between different build tools by standardizing the packaging process regardless of
+    whether dependencies were installed via pip, Poetry, or UV.
+
+    **Packaging Workflow:**
+
+    1. **Directory Standardization**: Moves packages from tool-specific locations into Lambda's required ``python/`` structure
+    2. **Selective Compression**: Creates optimized zip files with package exclusions for size optimization
+    3. **Deployment Preparation**: Produces artifacts ready for S3 upload and Lambda layer publication
+
+    **Multi-Tool Support:**
+
+    - **pip**: Uses packages already in correct ``python/`` location (no movement needed)
+    - **Poetry**: Moves from ``.venv/lib/python3.x/site-packages/`` to ``python/``
+    - **UV**: Moves from ``.venv/lib/python3.x/site-packages/`` to ``python/``
+
+    **Optimization Features:**
+
+    - **Package Exclusions**: Removes AWS runtime-provided packages (boto3, botocore) and development tools
+    - **Maximum Compression**: Uses zip level -9 for smallest possible layer size
+    - **Custom Filtering**: Supports additional package exclusions through ignore lists
+
+    **Output Location:**
+
+    Creates ``build/lambda/layer/layer.zip`` ready for deployment.
+    """
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
     build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
     ignore_package_list: list[str] | None = dataclasses.field(default=None)

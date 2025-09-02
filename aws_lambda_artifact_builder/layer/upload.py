@@ -15,7 +15,7 @@ from ..typehint import T_PRINTER
 from ..constants import S3MetadataKeyEnum, LayerBuildToolEnum
 from ..imports import S3Path
 
-from .common import LayerManifestManager
+from .foundation import LayerManifestManager
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3 import S3Client
