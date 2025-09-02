@@ -20,6 +20,7 @@ Architecture Overview:
 import typing as T
 import json
 import shutil
+import hashlib
 import subprocess
 import dataclasses
 from pathlib import Path
@@ -31,6 +32,10 @@ from ..typehint import T_PRINTER
 from ..constants import ZFILL, LayerBuildToolEnum
 from ..imports import S3Path
 from ..utils import write_bytes, clean_build_directory
+
+if T.TYPE_CHECKING:  # pragma: no cover
+    from mypy_boto3_s3 import S3Client
+    from mypy_boto3_lambda import LambdaClient
 
 
 @dataclasses.dataclass(frozen=True)
@@ -595,7 +600,7 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
     @cached_property
     def path_layout(self) -> LayerPathLayout:
         """
-        :return: :class:`LayerPathLayout` object for managing build paths.
+        :class:`LayerPathLayout` object for managing build paths.
         """
         return LayerPathLayout(
             path_pyproject_toml=self.path_pyproject_toml,
@@ -663,6 +668,9 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
 
     @cached_property
     def path_layout(self) -> LayerPathLayout:
+        """
+        :class:`LayerPathLayout` object for managing build paths.
+        """
         return LayerPathLayout(
             path_pyproject_toml=self.path_pyproject_toml,
         )
@@ -783,3 +791,59 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
         inside the container environment.
         """
         subprocess.run(self.args)
+
+
+@dataclasses.dataclass(frozen=True)
+class LayerManifestManager(BaseFrozenModel):
+    path_pyproject_toml: Path = dataclasses.field(default=REQ)
+    s3dir_lambda: "S3Path" = dataclasses.field(default=REQ)
+    layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
+    s3_client: "S3Client" = dataclasses.field(default=REQ)
+    printer: T_PRINTER = dataclasses.field(default=print)
+
+    @cached_property
+    def path_layout(self) -> LayerPathLayout:
+        """
+        :class:`LayerPathLayout` object for managing build paths.
+        """
+        return LayerPathLayout(
+            path_pyproject_toml=self.path_pyproject_toml,
+        )
+
+    @cached_property
+    def s3_layout(self) -> LayerS3Layout:
+        """
+        :class:`LayerS3Layout` object for managing build paths.
+        """
+        return LayerS3Layout(
+            s3dir_lambda=self.s3dir_lambda,
+        )
+
+    @cached_property
+    def path_manifest(self) -> Path:
+        """
+        Get the dependency manifest file path.
+        """
+        return self.path_layout.get_path_manifest(tool=self.layer_build_tool)
+
+    @cached_property
+    def manifest_md5(self) -> str:
+        """
+        Calculate the MD5 hash of the dependency manifest file.
+        """
+        return hashlib.md5(self.path_manifest.read_bytes()).hexdigest()
+
+    def get_versioned_manifest(self, version: int) -> "S3Path":
+        """
+        Get the S3 path of the dependency manifest file for a specific layer version.
+
+        This method constructs the S3 path where the dependency manifest (source of truth)
+        is stored for a given layer version. The manifest serves as a backup that enables
+        future change detection and layer reproducibility.
+
+        :param version: The layer version number to get the manifest path for
+        :return: S3Path pointing to the stored manifest file for the specified version
+        """
+        s3dir = self.s3_layout.get_s3dir_layer_version(layer_version=version)
+        s3path = s3dir.joinpath(self.path_manifest.name)
+        return s3path

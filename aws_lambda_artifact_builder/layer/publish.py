@@ -1,5 +1,32 @@
 # -*- coding: utf-8 -*-
 
+"""
+Lambda layer publication implementation - Step 4 of the layer creation workflow.
+
+This module handles the publication phase of AWS Lambda layer deployment, taking
+the uploaded layer zip file from S3 and creating versioned Lambda layer resources.
+It represents the fourth and final step in the complete layer workflow:
+
+1. **Build**: Install dependencies using pip/Poetry/UV builders
+2. **Package**: Structure and compress dependencies into zip file  
+3. **Upload**: Deploy zip file to S3 storage
+4. **Publish**: Create versioned Lambda layer from S3 artifact (this module)
+
+**Public API Functions:**
+    - :func:`publish_layer_version`: Intelligent layer publishing with change detection
+
+**Key Features:**
+    - **Change Detection**: Compares dependency manifests to avoid unnecessary publications
+    - **Version Management**: Automatically increments layer versions
+    - **Manifest Backup**: Stores dependency manifests for reproducibility
+    - **S3 Integration**: Uses existing S3 artifacts for layer creation
+
+**Publication Process:**
+    The module implements smart publishing that only creates new layer versions when
+    dependencies have actually changed, determined by comparing local dependency
+    manifests against stored versions from previous publications.
+"""
+
 import typing as T
 import dataclasses
 from pathlib import Path
@@ -8,10 +35,10 @@ from functools import cached_property
 from func_args.api import BaseFrozenModel, REQ
 
 from ..typehint import T_PRINTER
-from ..constants import LayerBuildToolEnum
+from ..constants import S3MetadataKeyEnum, LayerBuildToolEnum
 from ..imports import S3Path, simple_aws_lambda
 
-from .common import LayerPathLayout, LayerS3Layout
+from .common import LayerManifestManager
 
 
 if T.TYPE_CHECKING:  # pragma: no cover
@@ -20,26 +47,45 @@ if T.TYPE_CHECKING:  # pragma: no cover
 
 
 @dataclasses.dataclass(frozen=True)
-class LambdaLayerVersionPublisher(BaseFrozenModel):
-    path_pyproject_toml: Path = dataclasses.field(default=REQ)
-    s3dir_lambda: "S3Path" = dataclasses.field(default=REQ)
+class LambdaLayerVersionPublisher(LayerManifestManager):
+    """
+    Command class for intelligent Lambda layer version publishing (Internal API).
+
+    This class implements the layer publication workflow with dependency change detection,
+    ensuring new layer versions are only created when dependencies have actually changed.
+    It follows the Command Pattern established by other builder classes.
+
+    **Not for direct use**: This is an internal command class. Use the public function
+    :func:`publish_layer_version` instead.
+
+    **Key Responsibilities:**
+
+    - **Change Detection**: Compare local manifests with previously published versions
+    - **Layer Publication**: Create new Lambda layer versions from S3 artifacts
+    - **Manifest Storage**: Backup dependency manifests for future comparisons
+    - **Version Management**: Handle layer version incrementation automatically
+
+    **Publication Logic:**
+
+    The publisher only creates new layer versions when the dependency manifest has
+    changed since the last publication. This prevents unnecessary version proliferation
+    and ensures layer versions represent meaningful dependency updates.
+    """
+
     layer_name: str = dataclasses.field(default=REQ)
-    layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
-    s3_client: "S3Client" = dataclasses.field(default=REQ)
     lambda_client: "LambdaClient" = dataclasses.field(default=REQ)
-    printer: T_PRINTER = dataclasses.field(default=print)
 
-    @cached_property
-    def path_layout(self) -> LayerPathLayout:
-        return LayerPathLayout(
-            path_pyproject_toml=self.path_pyproject_toml,
-        )
+    def is_layer_zip_exists(self) -> bool:
+        s3path = self.s3_layout.s3path_temp_layer_zip
+        return s3path.exists(bsm=self.s3_client)
 
-    @cached_property
-    def s3_layout(self) -> LayerS3Layout:
-        return LayerS3Layout(
-            s3dir_lambda=self.s3dir_lambda,
+    def is_layer_zip_consistent(self) -> bool:
+        s3path = self.s3_layout.s3path_temp_layer_zip
+        s3path.head_object(bsm=self.s3_client)
+        manifest_md5 = s3path.metadata.get(
+            S3MetadataKeyEnum.manifest_md5.value, "__invalid__"
         )
+        return manifest_md5 == self.manifest_md5
 
     @cached_property
     def latest_layer_version(self) -> T.Union["simple_aws_lambda.LayerVersion", None]:
@@ -47,21 +93,6 @@ class LambdaLayerVersionPublisher(BaseFrozenModel):
             lambda_client=self.lambda_client,
             layer_name=self.layer_name,
         )
-
-    @cached_property
-    def path_manifest(self) -> Path:
-        """
-        Get the dependency manifest file path.
-        """
-        return self.path_layout.get_path_manifest(tool=self.layer_build_tool)
-
-    def get_versioned_manifest(self, version: int) -> "S3Path":
-        """
-        Get the S3 path of the dependency manifest file for a specific layer version.
-        """
-        s3dir = self.s3_layout.get_s3dir_layer_version(layer_version=version)
-        s3path = s3dir.joinpath(self.path_manifest.name)
-        return s3path
 
     def has_dependency_manifest_changed(self) -> bool:
         """
@@ -120,11 +151,6 @@ class LambdaLayerVersionPublisher(BaseFrozenModel):
             version=latest_layer_version.version
         )
 
-        # If the stored manifest file doesn't exist, treat as changed
-        # This handles cases where the backup wasn't created or was deleted
-        if s3path_manifest.exists(bsm=self.s3_client) is False:
-            return True  # No stored manifest found, treat as changed
-
         # Compare local manifest content with stored version
         # Read both files as text and perform exact content comparison
         local_manifest_content = path_manifest.read_text()
@@ -139,6 +165,20 @@ class LambdaLayerVersionPublisher(BaseFrozenModel):
     ) -> tuple[int, str]:
         """
         Publish a new Lambda layer version using the zip file stored in S3.
+
+        This method creates a new versioned Lambda layer by referencing the layer zip
+        file that was previously uploaded to S3 during the upload phase. AWS Lambda
+        automatically assigns the next sequential version number.
+
+        **Layer Creation Process:**
+
+        1. **S3 Reference**: Points Lambda service to the uploaded zip file in S3
+        2. **Version Creation**: Lambda automatically increments version number
+        3. **ARN Generation**: Returns the full ARN of the newly created layer version
+
+        :param publish_layer_version_kwargs: Optional additional arguments to pass to
+            the Lambda publish_layer_version API call (e.g., Description, CompatibleRuntimes)
+        :return: Tuple of (layer_version_number, layer_version_arn)
         """
         if publish_layer_version_kwargs is None:
             publish_layer_version_kwargs = {}
@@ -160,11 +200,27 @@ class LambdaLayerVersionPublisher(BaseFrozenModel):
         version: int,
     ) -> "S3Path":
         """
+        Upload the dependency manifest file to S3 for the specified layer version.
+
+        This method stores the local dependency manifest (source of truth) alongside
+        the published layer version for future change detection and reproducibility.
+        The stored manifest enables the system to determine if dependencies have
+        changed in subsequent publication attempts.
+
+        **Storage Strategy:**
+
+        - **Version-Specific**: Each layer version gets its own manifest backup
+        - **Content Integrity**: Uses write_bytes() to ensure proper eTag generation
+        - **Plain Text**: Stored as text/plain for easy inspection and comparison
 
         .. important::
 
-            We have to use put_object() instead of upload_file() to ensure that
-            the eTag is the MD5 hash of the file content.
+            Uses write_bytes() instead of upload_file() to ensure that the eTag
+            is the MD5 hash of the file content, which is important for content
+            integrity verification.
+
+        :param version: The layer version number to associate the manifest with
+        :return: S3Path where the manifest was stored
         """
         path = self.path_manifest
         s3path_manifest = self.get_versioned_manifest(version=version)
@@ -178,6 +234,27 @@ class LambdaLayerVersionPublisher(BaseFrozenModel):
 
 @dataclasses.dataclass(frozen=True)
 class LayerDeployment(BaseFrozenModel):
+    """
+    Data class representing a completed layer deployment (Public API).
+
+    This immutable data class encapsulates all the key information about a
+    successfully published Lambda layer version, providing a complete record
+    of the deployment for downstream operations.
+
+    **Usage:**
+
+    The LayerDeployment is returned by :func:`publish_layer_version` when a new
+    layer version is successfully created. It contains all the identifiers and
+    references needed to work with the published layer.
+
+    **Attributes:**
+
+    - **layer_name**: The name of the Lambda layer
+    - **layer_version**: The version number assigned by AWS Lambda
+    - **layer_version_arn**: The full ARN of the published layer version
+    - **s3path_manifest**: S3 location of the stored dependency manifest
+    """
+
     layer_name: str = dataclasses.field(default=REQ)
     layer_version: int = dataclasses.field(default=REQ)
     layer_version_arn: str = dataclasses.field(default=REQ)
@@ -195,7 +272,50 @@ def publish_layer_version(
     verbose: bool = True,
     printer: T_PRINTER = print,
 ) -> LayerDeployment | None:
+    """
+    Intelligently publish a new Lambda layer version with dependency change detection (Public API).
+
+    This function implements smart layer publishing that only creates new layer versions
+    when dependencies have actually changed since the last publication. It compares the
+    current dependency manifest against the stored version from the latest published layer
+    to determine if a new version is needed.
+
+    **Smart Publication Logic:**
+
+    1. **Change Detection**: Compare local manifest with latest published version
+    2. **Conditional Publishing**: Only publish if dependencies have changed
+    3. **Version Creation**: Use existing S3 zip file to create Lambda layer version
+    4. **Manifest Backup**: Store dependency manifest for future comparisons
+
+    **Publication Process:**
+
+    - **Dependencies Changed**: Creates new layer version and returns LayerDeployment
+    - **No Changes Detected**: Skips publication and returns None
+    - **First Publication**: Always publishes (no previous version to compare)
+
+    **Requirements:**
+
+    - Layer zip file must already exist in S3 (from upload step)
+    - Local dependency manifest must be available for comparison
+    - AWS credentials must have Lambda layer publication permissions
+
+    :param s3_client: Configured boto3 S3 client with appropriate permissions
+    :param lambda_client: Configured boto3 Lambda client with layer permissions
+    :param path_pyproject_toml: Path to pyproject.toml file (determines project root)
+    :param s3dir_lambda: S3 directory where Lambda artifacts are stored
+    :param layer_build_tool: Build tool used to create dependencies (pip/poetry/uv)
+    :param layer_name: Name of the Lambda layer to create/update
+    :param publish_layer_version_kwargs: Optional additional arguments for Lambda API
+    :param verbose: If True, shows detailed publication progress
+    :param printer: Function to handle progress messages, defaults to print
+
+    :return: LayerDeployment object if new version was published, None if skipped
+    """
+    # Display publication initiation message
     printer("--- Publish Lambda Layer Version ---")
+    # Initialize the layer publisher command with all required configuration
+    # This sets up the path layouts, S3 structures, and AWS clients needed
+    # for the publication workflow
     publisher = LambdaLayerVersionPublisher(
         path_pyproject_toml=path_pyproject_toml,
         s3dir_lambda=s3dir_lambda,
@@ -206,23 +326,48 @@ def publish_layer_version(
         printer=printer,
     )
 
-    flag = publisher.has_dependency_manifest_changed()
-    if flag is False:
+    if publisher.is_layer_zip_exists() is False:
+        s3path = publisher.s3_layout.s3path_temp_layer_zip
+        raise FileNotFoundError(f"Layer zip file {s3path:.uri} does not exist!")
+    if publisher.is_layer_zip_consistent() is False:
+        path = publisher.path_manifest
+        s3path = publisher.s3_layout.s3path_temp_layer_zip
+        raise ValueError(
+            f"Layer zip file {s3path:.uri} manifest_md5 in metadata "
+            f"is inconsistent with {path}!"
+        )
+
+    # Check if the local dependency manifest has changed since the last publication
+    # This is the core intelligence that prevents unnecessary layer version creation
+    has_changed = publisher.has_dependency_manifest_changed()
+    if not has_changed:
+        # Dependencies are identical to the last published version
+        # Skip publication to avoid creating redundant layer versions
         if verbose:
-            printer(f"dependency not changed, do nothing")
+            printer("Dependencies unchanged since last publication - skipping")
         return None
+    # Dependencies have changed - proceed with publishing new layer version
+    # This creates the actual Lambda layer version using the S3 zip file
     layer_version, layer_version_arn = publisher.publish_layer_version(
         publish_layer_version_kwargs=publish_layer_version_kwargs,
     )
+
+    # Display the newly created layer version information
     if verbose:
-        printer(f"{layer_version = }")
-        printer(f"{layer_version_arn = }")
+        printer(f"Successfully published layer version: {layer_version}")
+        printer(f"Layer version ARN: {layer_version_arn}")
+    # Store the dependency manifest alongside the published layer version
+    # This backup enables future change detection for subsequent publications
     s3path_manifest = publisher.upload_dependency_manifest(
         version=layer_version,
     )
+
+    # Display manifest storage information for verification and debugging
     if verbose:
-        printer(f"{s3path_manifest.uri = }")
-        printer(f"{s3path_manifest.console_url = }")
+        printer(f"Manifest stored at: {s3path_manifest.uri}")
+        printer(f"Console URL: {s3path_manifest.console_url}")
+    # Create and return a complete deployment record with all key information
+    # This provides downstream processes with everything needed to reference the layer
     layer_deployment = LayerDeployment(
         layer_name=layer_name,
         layer_version=layer_version,
