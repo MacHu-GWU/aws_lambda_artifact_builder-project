@@ -9,11 +9,10 @@ through lock files and sophisticated dependency resolution.
 
 **Command Pattern Classes:**
 
-- :class:`PoetryBasedLambdaLayerLocalBuilder`: Local pip-based builds
-- :class:`PoetryBasedLambdaLayerContainerBuilder`: Containerized pip-based builds
+- :class:`PoetryBasedLambdaLayerLocalBuilder`: Local poetry-based builds
+- :class:`PoetryBasedLambdaLayerContainerBuilder`: Containerized poetry-based builds
 """
 
-import os
 import subprocess
 import dataclasses
 from pathlib import Path
@@ -97,8 +96,6 @@ class PoetryBasedLambdaLayerLocalBuilder(
 
         Runs Poetry install with --no-root to exclude the project package itself,
         installing only dependencies into an in-project virtual environment.
-
-        :param credentials: Optional private repository authentication
         """
         path_bin_poetry = self.path_bin_poetry
         dir_repo = self.path_layout.dir_repo

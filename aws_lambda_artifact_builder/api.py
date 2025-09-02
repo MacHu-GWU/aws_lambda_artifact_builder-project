@@ -19,8 +19,8 @@ from .layer.pip_builder import PipBasedLambdaLayerLocalBuilder
 from .layer.pip_builder import PipBasedLambdaLayerContainerBuilder
 from .layer.poetry_builder import PoetryBasedLambdaLayerLocalBuilder
 from .layer.poetry_builder import PoetryBasedLambdaLayerContainerBuilder
-# from .layer.uv_builder import build_layer_artifacts_using_uv_in_local
-# from .layer.uv_builder import build_layer_artifacts_using_uv_in_container
+from .layer.uv_builder import UVBasedLambdaLayerLocalBuilder
+from .layer.uv_builder import UVBasedLambdaLayerContainerBuilder
 from .vendor.better_pathlib import temp_cwd
 from .vendor.hashes import hashes
 from .vendor.timer import DateTimeTimer
