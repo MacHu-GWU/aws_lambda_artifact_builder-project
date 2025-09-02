@@ -663,7 +663,7 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
     py_ver_major: int = dataclasses.field(default=REQ)
     py_ver_minor: int = dataclasses.field(default=REQ)
     is_arm: bool = dataclasses.field(default=REQ)
-    credentials: T.Optional[Credentials] = dataclasses.field(default=None)
+    credentials: Credentials | None = dataclasses.field(default=None)
     printer: T_PRINTER = dataclasses.field(default=print)
 
     @cached_property
