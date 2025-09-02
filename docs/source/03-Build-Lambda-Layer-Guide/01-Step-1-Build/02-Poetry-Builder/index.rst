@@ -46,10 +46,10 @@ Build Options
 ------------------------------------------------------------------------------
 You can choose between local and containerized builds depending on your development workflow and compatibility requirements. Local builds are faster for iteration, while container builds guarantee your layer will work identically in the AWS Lambda runtime environment.
 
-**Local Build:** :func:`~aws_lambda_artifact_builder.layer.poetry_builder.build_layer_artifacts_using_poetry_in_local`
+**Local Build:** :class:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder`
     Uses local Poetry installation - fastest for development with Poetry already configured
 
-**Container Build:** :func:`~aws_lambda_artifact_builder.layer.poetry_builder.build_layer_artifacts_using_poetry_in_container`
+**Container Build:** :class:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerContainerBuilder`
     Uses Docker container with Poetry installation - ensures compatibility and isolation
 
 
@@ -63,4 +63,59 @@ When your Lambda layer depends on packages from private repositories, Poetry Bui
     export POETRY_HTTP_BASIC_PRIVATE_USERNAME=username
     export POETRY_HTTP_BASIC_PRIVATE_PASSWORD=password
 
-The builder automatically configures these environment variables when :meth:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder.poetry_login` are provided, following Poetry's naming convention for private repository authentication.
+The builder automatically configures these environment variables when credentials are provided through the :meth:`~aws_lambda_artifact_builder.layer.poetry_builder.PoetryBasedLambdaLayerLocalBuilder.step_3_1_poetry_login` method, following Poetry's naming convention for private repository authentication.
+
+
+Usage Examples
+------------------------------------------------------------------------------
+
+**Local Build Example:**
+
+.. code-block:: python
+
+    from pathlib import Path
+    import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
+
+    # Create and run local Poetry builder
+    builder = aws_lambda_artifact_builder.PoetryBasedLambdaLayerLocalBuilder(
+        path_bin_poetry=Path(".venv/bin/poetry"),  # Your Poetry executable
+        path_pyproject_toml=Path("pyproject.toml"),
+        credentials=None,  # Add credentials for private repos if needed
+        skip_prompt=True,  # Automatically clean build directory
+    )
+    builder.run()  # Execute complete 4-step build workflow
+
+**Container Build Example:**
+
+.. code-block:: python
+
+    from pathlib import Path
+    import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
+
+    # Create and run containerized Poetry builder
+    builder = aws_lambda_artifact_builder.PoetryBasedLambdaLayerContainerBuilder(
+        path_pyproject_toml=Path("pyproject.toml"),
+        py_ver_major=3,
+        py_ver_minor=11,
+        is_arm=False,  # Use True for ARM64 Lambda functions
+        credentials=None,  # Add credentials for private repos if needed
+    )
+    builder.run()  # Execute complete 4-step containerized workflow
+
+**Step-by-Step Execution:**
+
+For custom workflows, you can execute individual steps:
+
+.. code-block:: python
+
+    builder = aws_lambda_artifact_builder.PoetryBasedLambdaLayerLocalBuilder(
+        path_bin_poetry=Path(".venv/bin/poetry"),
+        path_pyproject_toml=Path("pyproject.toml"),
+        skip_prompt=True,
+    )
+    
+    # Execute individual steps for custom control
+    builder.step_1_preflight_check()      # Validate environment
+    builder.step_2_prepare_environment()  # Setup build dir and copy Poetry files
+    builder.step_3_execute_build()        # Run poetry install --no-root
+    builder.step_4_finalize_artifacts()   # Complete build

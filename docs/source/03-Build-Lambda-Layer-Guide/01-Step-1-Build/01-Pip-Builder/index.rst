@@ -43,10 +43,10 @@ Build Options
 ------------------------------------------------------------------------------
 You can choose between local and containerized builds depending on your development workflow and compatibility requirements. Local builds are faster for iteration (if you work on a Linux machine), while container builds guarantee your layer will work identically in the AWS Lambda runtime environment.
 
-**Local Build:** :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_local`
+**Local Build:** :class:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerLocalBuilder`
     Uses local pip installation - fastest for development
 
-**Container Build:** :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_container`
+**Container Build:** :class:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerContainerBuilder`
     Uses Docker container with AWS Lambda runtime - ensures compatibility
 
 
@@ -57,3 +57,58 @@ When your Lambda layer depends on packages from private repositories, the builde
 .. code-block:: bash
 
     --extra-index-url https://username:password@private.pypi.com/simple/
+
+
+Usage Examples
+------------------------------------------------------------------------------
+
+**Local Build Example:**
+
+.. code-block:: python
+
+    from pathlib import Path
+    import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
+
+    # Create and run local pip builder
+    builder = aws_lambda_artifact_builder.PipBasedLambdaLayerLocalBuilder(
+        path_bin_pip=Path(".venv/bin/pip"),  # Your virtual environment pip
+        path_pyproject_toml=Path("pyproject.toml"),
+        credentials=None,  # Add credentials for private repos if needed
+        skip_prompt=True,  # Automatically clean build directory
+    )
+    builder.run()  # Execute complete 4-step build workflow
+
+**Container Build Example:**
+
+.. code-block:: python
+
+    from pathlib import Path
+    import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
+
+    # Create and run containerized pip builder
+    builder = aws_lambda_artifact_builder.PipBasedLambdaLayerContainerBuilder(
+        path_pyproject_toml=Path("pyproject.toml"),
+        py_ver_major=3,
+        py_ver_minor=11,
+        is_arm=False,  # Use True for ARM64 Lambda functions
+        credentials=None,  # Add credentials for private repos if needed
+    )
+    builder.run()  # Execute complete 4-step containerized workflow
+
+**Step-by-Step Execution:**
+
+For custom workflows, you can execute individual steps:
+
+.. code-block:: python
+
+    builder = aws_lambda_artifact_builder.PipBasedLambdaLayerLocalBuilder(
+        path_bin_pip=Path(".venv/bin/pip"),
+        path_pyproject_toml=Path("pyproject.toml"),
+        skip_prompt=True,
+    )
+    
+    # Execute individual steps for custom control
+    builder.step_1_preflight_check()      # Validate environment
+    builder.step_2_prepare_environment()  # Setup build directory
+    builder.step_3_execute_build()        # Run pip install
+    builder.step_4_finalize_artifacts()   # Complete build

@@ -14,10 +14,7 @@ sub packages and modules
     api <api>
     constants <constants>
     imports <imports>
-    lambda_function <lambda_function>
-    layer <layer>
     source <source>
-    tmp <tmp>
     typehint <typehint>
     utils <utils>
     
