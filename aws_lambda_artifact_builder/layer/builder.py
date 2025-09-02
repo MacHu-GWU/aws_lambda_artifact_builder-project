@@ -19,20 +19,33 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
     """
     Base command class for local Lambda layer builds.
 
-    This abstract base implements the common workflow for building Lambda layers
-    directly on the host machine using local dependency management tools (pip, poetry, uv).
-    Subclasses implement tool-specific installation logic while sharing common
-    infrastructure like directory setup and path management.
+    This abstract base implements a standardized 4-step workflow for building Lambda layers
+    directly on the host machine using local dependency management tools (pip, Poetry, UV).
+    The command pattern design allows fine-grained control and customization of each build phase.
 
-    **Command Pattern**: Each builder encapsulates a complete build workflow as a series
-    of discrete steps that can be executed, tested, and extended independently.
+    **4-Step Build Workflow:**
 
-    **Usage**: Not used directly - subclassed by tool-specific builders like
-    PipBasedLambdaLayerLocalBuilder, PoetryBasedLambdaLayerLocalBuilder, etc.
+    1. **Preflight Check** (:meth:`step_1_preflight_check`): Validate environment, tools, and project structure
+    2. **Prepare Environment** (:meth:`step_2_prepare_environment`): Clean build directories and set up workspace
+    3. **Execute Build** (:meth:`step_3_execute_build`): Run tool-specific dependency installation (abstract)
+    4. **Finalize Artifacts** (:meth:`step_4_finalize_artifacts`): Transform output into Lambda-compatible structure
 
-    .. seealso::
+    **Command Pattern Benefits:**
 
-        :ref:`lambda-layer-local-builder`
+    - Each step can be overridden independently for customization
+    - Sub-steps within each phase provide granular control points
+    - Workflow can be extended with pre/post hooks or additional steps
+    - Easy to test individual phases in isolation
+
+    **Local Build Advantages:**
+
+    - Fast execution without Docker overhead
+    - Direct access to host environment and tools
+    - Ideal for development iteration and Linux environments
+    - Simple dependency resolution using host-installed package managers
+
+    **Usage**: Subclass and implement :meth:`step_3_execute_build` with tool-specific logic.
+    Call :meth:`run` to execute the complete workflow, or invoke individual steps for custom workflows.
     """
 
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
@@ -53,7 +66,10 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
 
     def run(self):
         """
-        Execute the complete build workflow in defined steps.
+        Execute the complete local build workflow in sequence.
+
+        Runs all four build phases in order. Override individual steps
+        or call steps directly for custom workflows.
         """
         self.step_1_preflight_check()
         self.step_2_prepare_environment()
@@ -91,7 +107,7 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
         Provides visibility into the build process by showing which tool
         is being used and where artifacts will be created.
         """
-        self.printer(f"--- Build Lambda layer artifacts using {self._tool} ...")
+        self.printer(f"--- Build Lambda layer artifacts using {self._tool.value} ...")
         p = self.path_pyproject_toml
         self.printer(f"path_pyproject_toml = {p}")
         p = self.path_layout.dir_build_lambda_layer
@@ -121,22 +137,41 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
     """
     Base command class for containerized Lambda layer builds.
 
-    This abstract base provides Docker container orchestration for building Lambda layers
-    using AWS SAM build images that match the Lambda runtime environment. It handles
-    container configuration, volume mounting, and script execution while delegating
-    tool-specific build logic to copied scripts that run inside the container.
+    This abstract base implements a standardized 4-step workflow for building Lambda layers
+    inside Docker containers using official AWS SAM build images. The containerized approach
+    ensures perfect runtime compatibility while maintaining the same command pattern flexibility.
 
-    **Architecture Benefits**:
+    **4-Step Containerized Workflow:**
+
+    1. **Preflight Check** (:meth:`step_1_preflight_check`): Validate Docker environment and build prerequisites
+    2. **Prepare Environment** (:meth:`step_2_prepare_environment`): Copy build scripts and set up credentials
+    3. **Execute Build** (:meth:`step_3_execute_build`): Run Docker container with mounted volumes
+    4. **Finalize Artifacts** (:meth:`step_4_finalize_artifacts`): Clean up temporary files and validate results
+
+    **Container Build Process:**
+
+    - Mounts project root to ``/var/task`` inside container
+    - Executes tool-specific build script within Lambda runtime environment
+    - Uses local builder classes inside container for consistency
+    - Transfers credentials securely via JSON files
+
+    **Architecture Benefits:**
+
     - **Runtime Compatibility**: Uses official AWS Lambda container images
-    - **Isolation**: Builds don't affect the host environment
-    - **Reproducibility**: Consistent results across different development machines
-    - **Platform Support**: Handles both x86_64 and ARM64 architectures
+    - **Cross-Platform**: Builds Linux-compatible layers on any host OS
+    - **Isolation**: No interference with host Python environment
+    - **Reproducibility**: Identical results across different development machines
+    - **Architecture Support**: Handles both x86_64 and ARM64 Lambda runtimes
 
-    **Command Pattern**: Encapsulates the complete containerized build workflow,
-    making it easy to test, extend, and maintain tool-specific build strategies.
+    **Command Pattern Benefits:**
 
-    **Usage**: Subclassed by tool-specific container builders that provide
-    the appropriate build scripts for execution inside the container.
+    - Individual container setup steps can be customized
+    - Easy to extend with additional pre/post processing
+    - Docker configuration can be modified through property overrides
+    - Build script deployment can be customized per tool
+
+    **Usage**: Subclass and provide tool-specific build script via :attr:`path_script`.
+    Call :meth:`run` to execute containerized build, or customize individual steps as needed.
     """
 
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
@@ -241,7 +276,10 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
 
     def run(self):
         """
-        Execute the complete containerized build workflow in defined steps.
+        Execute the complete containerized build workflow in sequence.
+
+        Runs all four container build phases in order. Override individual
+        steps or call steps directly for custom workflows.
         """
         self.step_1_preflight_check()
         self.step_2_prepare_environment()

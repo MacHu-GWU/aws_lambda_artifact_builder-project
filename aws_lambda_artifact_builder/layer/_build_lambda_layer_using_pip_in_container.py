@@ -3,8 +3,6 @@
 """
 Container-based Lambda layer build script for pip dependency management.
 
-**Container Orchestration Overview**
-
 This script is designed to execute inside AWS SAM build containers as part of the
 :class:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerContainerBuilder` workflow.
 It bridges the gap between host system and container environment by replicating local build logic
@@ -12,28 +10,8 @@ inside a Docker container that matches AWS Lambda's exact runtime environment.
 
 **Execution Flow**
 
-1. **Script Preparation**: The container builder copies this script via
-   :meth:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerContainerBuilder.step_01_copy_build_script`
-2. **Credential Setup**: Authentication tokens are serialized and mounted via
-   :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder.step_02_setup_private_repository_credential`
-3. **Container Execution**: Docker runs this script inside the container via
-   :meth:`~aws_lambda_artifact_builder.layer.common.BasedLambdaLayerContainerBuilder.step_03_docker_run`
-4. **Local Build Execution**: This script calls
-   :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_local`
-   inside the container environment
-
-**Container Environment**
-
-- **Working Directory**: ``/var/task`` (mounted from host project root)
-- **Python Environment**: Matches AWS Lambda runtime exactly
-- **Authentication**: Credentials loaded from mounted JSON file
-- **Isolation**: No interference with host development environment
-
-**Architecture Benefits**
-
-This approach allows the pip-specific build logic to remain in the local builder classes
-where it's easily testable and debuggable, while the container orchestration handles
-Docker lifecycle management without duplicating business logic.
+1. Install ``aws_lambda_artifact_builder`` library inside the container
+2. Use the ``Builder`` class to execute the build logic.
 
 **EXECUTION SAFETY**
 
@@ -50,7 +28,9 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Verify container execution environment
+# ------------------------------------------------------------------------------
+# 1. Verify container execution environment
+# ------------------------------------------------------------------------------
 # The Docker container mounts the host project root to /var/task, so this script
 # must be executing from that exact location to ensure proper path resolution
 print("--- Verify the current runtime ...")
@@ -63,12 +43,14 @@ if str(dir_here) != "/var/task":
 else:
     print("Current directory is /var/task, we are in the container OK.")
 
+# ------------------------------------------------------------------------------
+# 2. Install aws_lambda_artifact_builder within the container
+# ------------------------------------------------------------------------------
 # Locate pip executable within the container's Python environment
 # The container uses the same Python version as the target Lambda runtime
 dir_bin = Path(sys.executable).parent
 path_bin_pip = dir_bin / "pip"
 
-# Install aws_lambda_artifact_builder within the container
 # This ensures the local builder functions are available inside the container environment
 # Note: In production, this would install from PyPI; in development, uses local requirements
 print("--- Pip install aws_lambda_artifact_builder ...")
@@ -92,6 +74,9 @@ subprocess.run(args, check=True)
 elapsed = (datetime.now() - st).total_seconds()
 print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 
+# ------------------------------------------------------------------------------
+# 3. Use the local builder logic inside the container
+# ------------------------------------------------------------------------------
 # Import the local builder functions that contain the actual pip installation logic
 # These are the same functions used for local builds, ensuring consistency between
 # local and container-based builds
@@ -119,9 +104,7 @@ else:
 # Execute the same local builder logic that would run on the host machine
 # The key difference is that this runs inside a Linux container that exactly matches
 # the AWS Lambda runtime environment, ensuring binary compatibility
-#
-# This delegates to :func:`~aws_lambda_artifact_builder.layer.pip_builder.build_layer_artifacts_using_pip_in_local`
-# which orchestrates the :class:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerLocalBuilder`
+
 # command execution workflow
 print("--- Starting pip-based layer build inside container ...")
 builder = PipBasedLambdaLayerLocalBuilder(

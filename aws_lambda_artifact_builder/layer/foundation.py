@@ -18,6 +18,7 @@ Architecture Overview:
 """
 
 import typing as T
+import os
 import json
 import shutil
 import hashlib
@@ -54,6 +55,9 @@ class Credentials:
 
     @property
     def normalized_index_url(self) -> str:
+        """
+        Normalize index URL by stripping scheme and trailing slashes.
+        """
         index_url = self.index_url
         if index_url.startswith("https://"):
             index_url = index_url[len("https://") :]
@@ -62,6 +66,13 @@ class Credentials:
         if index_url.endswith("/simple"):
             index_url = index_url[: -len("/simple")]
         return index_url
+
+    @property
+    def uppercase_index_name(self) -> str:
+        """
+        This is used for environment variable keys for poetry / uv authentication.
+        """
+        return self.index_name.replace("-", "_").upper()
 
     @property
     def pip_extra_index_url(self) -> str:
@@ -85,6 +96,66 @@ class Credentials:
     @classmethod
     def load(cls, path: Path):
         return cls(**json.loads(path.read_text(encoding="utf-8")))
+
+    @property
+    def additional_pip_install_args_index_url(self):
+        """
+        Override default PyPI with authenticated URL with embedded credentials.
+
+        .. seealso::
+
+            https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-i
+        """
+        return [
+            "--index-url",  # Override default PyPI with authenticated URL
+            self.pip_extra_index_url,  # Includes embedded credentials
+        ]
+
+    @property
+    def additional_pip_install_args_extra_index_url(self):
+        """
+        Override default PyPI with authenticated URL with embedded credentials.
+
+        .. seealso::
+
+            https://pip.pypa.io/en/stable/cli/pip_install/#cmdoption-extra-index-url
+        """
+        return [
+            "--extra-index-url",
+            self.pip_extra_index_url,
+        ]
+
+    def poetry_login(self) -> tuple[str, str]:
+        """
+        Configure Poetry authentication via environment variables.
+
+        Poetry uses POETRY_HTTP_BASIC_{SOURCE}_USERNAME/PASSWORD environment
+        variables for private repository authentication, following Poetry's
+        documented credential configuration pattern.
+
+        .. seealso::
+
+            https://python-poetry.org/docs/repositories/#configuring-credentials
+        """
+        key_user = f"POETRY_HTTP_BASIC_{self.uppercase_index_name}_USERNAME"
+        os.environ[key_user] = "aws"
+        key_pass = f"POETRY_HTTP_BASIC_{self.uppercase_index_name}_PASSWORD"
+        os.environ[key_pass] = self.password
+        return key_user, key_pass
+
+    def uv_login(self) -> tuple[str, str]:
+        """
+        Configure UV authentication via environment variables.
+
+        .. seealso::
+
+            https://docs.astral.sh/uv/reference/environment/#uv_index_url
+        """
+        key_user = f"UV_INDEX_{self.uppercase_index_name}_USERNAME"
+        os.environ[key_user] = "aws"
+        key_pass = f"UV_INDEX_{self.uppercase_index_name}_PASSWORD"
+        os.environ[key_pass] = self.password
+        return key_user, key_pass
 
 
 @dataclasses.dataclass(frozen=True)

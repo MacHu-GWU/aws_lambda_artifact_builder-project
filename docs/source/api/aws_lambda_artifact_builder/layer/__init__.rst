@@ -13,7 +13,8 @@ sub packages and modules
     _build_lambda_layer_using_pip_in_container <_build_lambda_layer_using_pip_in_container>
     _build_lambda_layer_using_poetry_in_container <_build_lambda_layer_using_poetry_in_container>
     _build_lambda_layer_using_uv_in_container <_build_lambda_layer_using_uv_in_container>
-    common <common>
+    builder <builder>
+    foundation <foundation>
     package <package>
     pip_builder <pip_builder>
     poetry_builder <poetry_builder>
