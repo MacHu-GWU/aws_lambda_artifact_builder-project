@@ -38,7 +38,7 @@ from ..typehint import T_PRINTER
 from ..constants import S3MetadataKeyEnum, LayerBuildToolEnum
 from ..imports import S3Path, simple_aws_lambda
 
-from .common import LayerManifestManager
+from .foundation import LayerManifestManager
 
 
 if T.TYPE_CHECKING:  # pragma: no cover
@@ -74,49 +74,92 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
 
     layer_name: str = dataclasses.field(default=REQ)
     lambda_client: "LambdaClient" = dataclasses.field(default=REQ)
+    publish_layer_version_kwargs: dict[str, T.Any] | None = dataclasses.field(
+        default=None
+    )
+
+    def run(self) -> "LayerDeployment":
+        if self.verbose:
+            self.printer("--- Publish Lambda Layer Version ---")
+        self.step_1_preflight_check()
+        layer_deployment = self.step_2_publish_layer_version()
+        return layer_deployment
+
+    def step_1_preflight_check(self):
+        self.step_1_1_ensure_layer_zip_exists()
+        self.step_1_2_ensure_layer_zip_is_consistent()
+        self.step_1_3_ensure_dependencies_have_changed()
+
+    def step_2_publish_layer_version(self):
+        layer_version, layer_version_arn = self.step_2_1_run_publish_layer_version_api()
+        s3path_manifest = self.step_2_2_upload_dependency_manifest(
+            version=layer_version
+        )
+        layer_deployment = LayerDeployment(
+            layer_name=self.layer_name,
+            layer_version=layer_version,
+            layer_version_arn=layer_version_arn,
+            s3path_manifest=s3path_manifest,
+        )
+        return layer_deployment
+
+    # --- step_1_preflight_check sub-steps
+    def step_1_1_ensure_layer_zip_exists(self):
+        """
+        Verifies that the layer.zip file was successfully uploaded to S3 during
+        the :mod:`aws_lambda_artifact_builder.layer.upload` phase and is available
+        for Lambda layer creation. This is a prerequisite validation before
+        attempting to publish a new layer version.
+        """
+        if self.is_layer_zip_exists() is False:
+            s3path = self.s3_layout.s3path_temp_layer_zip
+            raise FileNotFoundError(
+                f"Layer zip file {s3path.uri} does not exist! "
+                f"Please run the upload step first to create the layer.zip in S3."
+            )
 
     def is_layer_zip_exists(self) -> bool:
         """
         Check if the layer zip file exists in S3 temporary storage.
-        
-        Verifies that the layer.zip file was successfully uploaded to S3 during
-        the upload phase and is available for Lambda layer creation. This is a
-        prerequisite validation before attempting to publish a new layer version.
-        
-        **Common Failure Scenarios:**
-        
-        - **Upload Step Skipped**: The upload phase was not executed
-        - **Upload Failed**: Network issues or S3 permissions prevented successful upload
-        - **File Deleted**: The temporary zip file was manually removed from S3
-        - **Wrong S3 Path**: Misconfigured S3 directory structure
-        
+
         :return: True if layer.zip exists in S3, False otherwise
         """
         s3path = self.s3_layout.s3path_temp_layer_zip
         return s3path.exists(bsm=self.s3_client)
 
-    def is_layer_zip_consistent(self) -> bool:
+    def step_1_2_ensure_layer_zip_is_consistent(self):
         """
         Validate that the uploaded layer.zip matches the current local manifest.
-        
+        """
+        if self.is_layer_zip_consistent() is False:
+            path = self.path_manifest
+            s3path = self.s3_layout.s3path_temp_layer_zip
+            raise ValueError(
+                f"Layer zip file {s3path.uri} is inconsistent with current manifest {path}! "
+                f"The uploaded layer.zip corresponds to a different dependency state. "
+                f"Please re-run the upload step to sync the layer.zip with current dependencies."
+            )
+
+    def is_layer_zip_consistent(self) -> bool:
+        """
         Compares the manifest MD5 hash stored in the S3 layer.zip metadata
         with the MD5 hash of the current local manifest file. This ensures that
         the uploaded layer artifact corresponds to the current dependency state
         before creating a new layer version.
-        
+
         **Consistency Issues That Can Occur:**
-        
+
         - **Manifest Modified**: Local manifest file was changed after upload
         - **Wrong Upload**: A different project's layer.zip was uploaded
         - **Missing Metadata**: Upload process failed to store manifest MD5
         - **Stale Upload**: Old layer.zip from previous dependency state
-        
+
         **Why This Check Matters:**
-        
+
         Without this validation, you might publish a layer version that doesn't
         match your current dependencies, leading to runtime errors or unexpected
         behavior in Lambda functions that use the layer.
-        
+
         :return: True if uploaded layer.zip matches current manifest, False otherwise
         """
         s3path = self.s3_layout.s3path_temp_layer_zip
@@ -126,12 +169,14 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         )
         return manifest_md5 == self.manifest_md5
 
-    @cached_property
-    def latest_layer_version(self) -> T.Union["simple_aws_lambda.LayerVersion", None]:
-        return simple_aws_lambda.get_latest_layer_version(
-            lambda_client=self.lambda_client,
-            layer_name=self.layer_name,
-        )
+    def step_1_3_ensure_dependencies_have_changed(self):
+        # Check if the local dependency manifest has changed since the last publication
+        # This is the core intelligence that prevents unnecessary layer version creation
+        has_changed = self.has_dependency_manifest_changed()
+        if not has_changed:
+            # Dependencies are identical to the last published version
+            # Skip publication to avoid creating redundant layer versions
+            raise ValueError("Dependencies unchanged since last publication - skipping")
 
     def has_dependency_manifest_changed(self) -> bool:
         """
@@ -198,10 +243,15 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         # Return True if contents differ (change detected), False if identical
         return local_manifest_content != stored_manifest_content
 
-    def publish_layer_version(
-        self,
-        publish_layer_version_kwargs: dict[str, T.Any] | None = None,
-    ) -> tuple[int, str]:
+    @cached_property
+    def latest_layer_version(self) -> T.Union["simple_aws_lambda.LayerVersion", None]:
+        return simple_aws_lambda.get_latest_layer_version(
+            lambda_client=self.lambda_client,
+            layer_name=self.layer_name,
+        )
+
+    # --- step_2_publish_layer_version sub-steps
+    def step_2_1_run_publish_layer_version_api(self) -> tuple[int, str]:
         """
         Publish a new Lambda layer version using the zip file stored in S3.
 
@@ -219,8 +269,10 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
             the Lambda publish_layer_version API call (e.g., Description, CompatibleRuntimes)
         :return: Tuple of (layer_version_number, layer_version_arn)
         """
-        if publish_layer_version_kwargs is None:
+        if self.publish_layer_version_kwargs is None:
             publish_layer_version_kwargs = {}
+        else:
+            publish_layer_version_kwargs = self.publish_layer_version_kwargs
         s3path = self.s3_layout.s3path_temp_layer_zip
         response = self.lambda_client.publish_layer_version(
             LayerName=self.layer_name,
@@ -232,9 +284,12 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         )
         layer_version_arn = response["LayerVersionArn"]
         layer_version = int(layer_version_arn.split(":")[-1])
+        if self.verbose:
+            self.printer(f"Successfully published layer version: {layer_version}")
+            self.printer(f"Layer version ARN: {layer_version_arn}")
         return layer_version, layer_version_arn
 
-    def upload_dependency_manifest(
+    def step_2_2_upload_dependency_manifest(
         self,
         version: int,
     ) -> "S3Path":
@@ -268,6 +323,9 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
             content_type="text/plain",
             bsm=self.s3_client,
         )
+        if self.verbose:
+            self.printer(f"Manifest stored at: {s3path_manifest.uri}")
+            self.printer(f"Console URL: {s3path_manifest.console_url}")
         return s3path_manifest
 
 
@@ -365,38 +423,6 @@ def publish_layer_version(
         printer=printer,
     )
 
-    # CRITICAL: Validate that layer.zip exists in S3 before attempting publication
-    # This prevents "NoSuchKey" errors during Lambda layer creation
-    # Common causes: upload step was skipped, S3 upload failed, or file was manually deleted
-    if publisher.is_layer_zip_exists() is False:
-        s3path = publisher.s3_layout.s3path_temp_layer_zip
-        raise FileNotFoundError(
-            f"Layer zip file {s3path.uri} does not exist! "
-            f"Please run the upload step first to create the layer.zip in S3."
-        )
-    
-    # CRITICAL: Validate that the uploaded layer.zip matches current local manifest
-    # This prevents publishing a layer with wrong dependencies that could cause runtime errors
-    # Common causes: manifest was modified after upload, wrong layer.zip was uploaded,
-    # or upload metadata is missing/corrupted
-    if publisher.is_layer_zip_consistent() is False:
-        path = publisher.path_manifest
-        s3path = publisher.s3_layout.s3path_temp_layer_zip
-        raise ValueError(
-            f"Layer zip file {s3path.uri} is inconsistent with current manifest {path}! "
-            f"The uploaded layer.zip corresponds to a different dependency state. "
-            f"Please re-run the upload step to sync the layer.zip with current dependencies."
-        )
-
-    # Check if the local dependency manifest has changed since the last publication
-    # This is the core intelligence that prevents unnecessary layer version creation
-    has_changed = publisher.has_dependency_manifest_changed()
-    if not has_changed:
-        # Dependencies are identical to the last published version
-        # Skip publication to avoid creating redundant layer versions
-        if verbose:
-            printer("Dependencies unchanged since last publication - skipping")
-        return None
     # Dependencies have changed - proceed with publishing new layer version
     # This creates the actual Lambda layer version using the S3 zip file
     layer_version, layer_version_arn = publisher.publish_layer_version(

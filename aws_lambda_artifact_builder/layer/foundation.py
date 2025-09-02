@@ -677,6 +677,7 @@ class LayerManifestManager(BaseFrozenModel):
     s3dir_lambda: "S3Path" = dataclasses.field(default=REQ)
     layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
     s3_client: "S3Client" = dataclasses.field(default=REQ)
+    verbose: bool = dataclasses.field(default=True)
     printer: T_PRINTER = dataclasses.field(default=print)
 
     @cached_property
