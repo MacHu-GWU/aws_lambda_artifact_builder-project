@@ -40,7 +40,6 @@ from .foundation import LayerManifestManager
 
 
 if T.TYPE_CHECKING:  # pragma: no cover
-    from mypy_boto3_s3 import S3Client
     from mypy_boto3_lambda import LambdaClient
 
 
@@ -80,8 +79,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         """
         Execute the complete layer publication workflow.
         """
-        if self.verbose:
-            self.printer("--- Publish Lambda Layer Version ---")
+        self.log("--- Start publish Lambda layer workflow")
         self.step_1_preflight_check()
         layer_deployment = self.step_2_publish_layer_version()
         return layer_deployment
@@ -90,6 +88,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         """
         Perform read-only validation of build environment and project configuration.
         """
+        self.log("--- Step 1 - Flight Check")
         self.step_1_1_ensure_layer_zip_exists()
         self.step_1_2_ensure_layer_zip_is_consistent()
         self.step_1_3_ensure_dependencies_have_changed()
@@ -98,6 +97,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         """
         Execute the layer publication workflow, creating a new Lambda layer version
         """
+        self.log("--- Step 2 - Publish Lambda Layer Version")
         layer_version, layer_version_arn = self.step_2_1_run_publish_layer_version_api()
         s3path_manifest = self.step_2_2_upload_dependency_manifest(
             version=layer_version
@@ -118,9 +118,8 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         for Lambda layer creation. This is a prerequisite validation before
         attempting to publish a new layer version.
         """
-        if self.verbose:
-            s3path = self.s3_layout.s3path_temp_layer_zip
-            self.printer(f"Check if layer.zip exists in S3 at {s3path.uri}...")
+        s3path = self.s3_layout.s3path_temp_layer_zip
+        self.log(f"--- Step 1.1 - Verify layer.zip exists in S3 at {s3path.uri}...")
         if self.is_layer_zip_exists() is False:
             s3path = self.s3_layout.s3path_temp_layer_zip
             raise FileNotFoundError(
@@ -128,8 +127,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
                 f"Please run the upload step first to create the layer.zip in S3."
             )
         else:
-            if self.verbose:
-                self.printer("✅ Layer zip file found in S3.")
+            self.log("✅ Layer zip file found in S3.")
 
     def is_layer_zip_exists(self) -> bool:
         """
@@ -144,6 +142,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         """
         Validate that the uploaded layer.zip matches the current local manifest.
         """
+        self.log("--- Step 1.2 - Validate layer.zip consistency with manifest")
         if self.is_layer_zip_consistent() is False:
             path = self.path_manifest
             s3path = self.s3_layout.s3path_temp_layer_zip
@@ -152,6 +151,8 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
                 f"The uploaded layer.zip corresponds to a different dependency state. "
                 f"Please re-run the upload step to sync the layer.zip with current dependencies."
             )
+        else:
+            self.log("✅ Layer zip file is consistent with current manifest.")
 
     def is_layer_zip_consistent(self) -> bool:
         """
@@ -183,13 +184,20 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         return manifest_md5 == self.manifest_md5
 
     def step_1_3_ensure_dependencies_have_changed(self):
-        # Check if the local dependency manifest has changed since the last publication
-        # This is the core intelligence that prevents unnecessary layer version creation
+        """
+        Check if the local dependency manifest has changed since the last publication
+        This is the core intelligence that prevents unnecessary layer version creation
+        """
+        self.log(
+            "--- Step 1.3 - Check if dependencies have changed since last publication"
+        )
         has_changed = self.has_dependency_manifest_changed()
         if not has_changed:
             # Dependencies are identical to the last published version
             # Skip publication to avoid creating redundant layer versions
             raise ValueError("Dependencies unchanged since last publication - skipping")
+        else:
+            self.log("✅ Dependencies have changed - proceeding with publishing.")
 
     def has_dependency_manifest_changed(self) -> bool:
         """
@@ -282,6 +290,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
             the Lambda publish_layer_version API call (e.g., Description, CompatibleRuntimes)
         :return: Tuple of (layer_version_number, layer_version_arn)
         """
+        self.log("--- Step 2.1 - Publish new Lambda layer version via API")
         if self.publish_layer_version_kwargs is None:
             publish_layer_version_kwargs = {}
         else:
@@ -297,9 +306,8 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         )
         layer_version_arn = response["LayerVersionArn"]
         layer_version = int(layer_version_arn.split(":")[-1])
-        if self.verbose:
-            self.printer(f"Successfully published layer version: {layer_version}")
-            self.printer(f"Layer version ARN: {layer_version_arn}")
+        self.log(f"Successfully published layer version: {layer_version}")
+        self.log(f"Layer version ARN: {layer_version_arn}")
         return layer_version, layer_version_arn
 
     def step_2_2_upload_dependency_manifest(
@@ -329,6 +337,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         :param version: The layer version number to associate the manifest with
         :return: S3Path where the manifest was stored
         """
+        self.log("--- Step 2.2 - Upload dependency manifest to S3")
         path = self.path_manifest
         s3path_manifest = self.get_versioned_manifest(version=version)
         s3path_manifest.write_bytes(
@@ -337,8 +346,8 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
             bsm=self.s3_client,
         )
         if self.verbose:
-            self.printer(f"Manifest stored at: {s3path_manifest.uri}")
-            self.printer(f"Console URL: {s3path_manifest.console_url}")
+            self.log(f"Manifest stored at: {s3path_manifest.uri}")
+            self.log(f"Console URL: {s3path_manifest.console_url}")
         return s3path_manifest
 
 

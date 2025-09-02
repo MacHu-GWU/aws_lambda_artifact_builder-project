@@ -213,10 +213,14 @@ class LayerPathLayout(BaseFrozenModel):
         return major, minor, micro
 
     @cached_property
-    def dir_venv_site_packages(self) -> Path:
+    def dir_build_lambda_layer_repo_venv_site_packages(self) -> Path:
+        """
+        The site-packages directory of the virtual environment that stores
+        all Lambda layer dependencies. Created by poetry or uv.
+        """
         # TODO: support Windows
         major, minor, micro = self.venv_python_version
-        return self.dir_venv / "lib" / f"python{major}.{minor}" / "site-packages"
+        return self.dir_repo / ".venv" / "lib" / f"python{major}.{minor}" / "site-packages"
 
     def get_path_in_container(self, path_in_local: Path) -> str:
         """

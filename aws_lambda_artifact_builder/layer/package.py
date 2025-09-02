@@ -202,7 +202,7 @@ class LambdaLayerZipper(BaseFrozenModel):
 
     def move_to_dir_python(self):
         move_to_dir_python(
-            dir_site_packages=self.path_layout.dir_venv_site_packages,
+            dir_site_packages=self.path_layout.dir_build_lambda_layer_repo_venv_site_packages,
             dir_python=self.path_layout.dir_python,
         )
 
