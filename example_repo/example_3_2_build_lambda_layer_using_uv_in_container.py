@@ -1,28 +1,14 @@
 # -*- coding: utf-8 -*-
 
-"""
-
-"""
-
-from pathlib import Path
-
-from settings import credentials, teardown_aws_lambda_artifact_builder
+from settings import teardown_aws_lambda_artifact_builder, settings
 import aws_lambda_artifact_builder.api as aws_lambda_artifact_builder
 
-# Current project directory
-dir_here = Path(__file__).absolute().parent
-# Python project configuration file
-path_pyproject_toml = dir_here / "pyproject.toml"
-# Disable Credentials if you don't need to access a private repository
-# credentials = None
-
-# Build the lambda layer artifacts
 with aws_lambda_artifact_builder.DateTimeTimer(title="Total build time"):
     builder = aws_lambda_artifact_builder.UVBasedLambdaLayerContainerBuilder(
-        path_pyproject_toml=path_pyproject_toml,
-        py_ver_major=3,
-        py_ver_minor=11,
-        credentials=credentials,
+        path_pyproject_toml=settings.path_pyproject_toml,
+        py_ver_major=settings.py_ver_major,
+        py_ver_minor=settings.py_ver_minor,
+        credentials=settings.credentials,
         is_arm=False,
     )
     builder.run()
