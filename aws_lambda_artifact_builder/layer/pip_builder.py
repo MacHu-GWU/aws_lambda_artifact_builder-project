@@ -49,12 +49,13 @@ class PipBasedLambdaLayerLocalBuilder(
         Display pip-specific build information.
         """
         super().step_1_1_print_info()
-        self.printer(f"path_bin_pip = {self.path_bin_pip}")
+        self.log(f"path_bin_pip = {self.path_bin_pip}")
 
     def step_3_execute_build(self):
         """
         Perform pip-based Lambda layer build step.
         """
+        super().step_3_execute_build()
         self.step_3_1_run_pip_install()
 
     def step_3_1_run_pip_install(self):
@@ -64,6 +65,7 @@ class PipBasedLambdaLayerLocalBuilder(
         Installs from requirements.txt directly into Lambda's python/ directory.
         Supports private repositories via --index-url with embedded credentials.
         """
+        self.log("--- Step 3.1 - Run 'pip install'")
         path_bin_pip = self.path_bin_pip
         dir_repo = self.path_layout.dir_repo
         with temp_cwd(dir_repo):

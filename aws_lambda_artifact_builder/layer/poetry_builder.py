@@ -57,7 +57,7 @@ class PoetryBasedLambdaLayerLocalBuilder(
         Display Poetry-specific build information.
         """
         super().step_1_1_print_info()
-        self.printer(f"path_bin_poetry = {self.path_bin_poetry}")
+        self.log(f"path_bin_poetry = {self.path_bin_poetry}")
 
     def step_2_prepare_environment(self):
         super().step_2_prepare_environment()
@@ -70,8 +70,9 @@ class PoetryBasedLambdaLayerLocalBuilder(
         Copies pyproject.toml and poetry.lock to ensure reproducible builds
         with exact dependency versions as resolved in development.
         """
-        self.path_layout.copy_pyproject_toml(printer=self.printer)
-        self.path_layout.copy_poetry_lock(printer=self.printer)
+        self.log("--- Step 2.2 - Prepare Poetry stuff")
+        self.path_layout.copy_pyproject_toml(printer=self.log)
+        self.path_layout.copy_poetry_lock(printer=self.log)
 
     def step_3_execute_build(self):
         """
@@ -84,11 +85,13 @@ class PoetryBasedLambdaLayerLocalBuilder(
         """
         Configure Poetry authentication via environment variables.
         """
+        self.log("--- Step 3.1 - Setting up Poetry credentials")
         if self.credentials is not None:
-            self.printer("--- Setting up Poetry credentials ...")
             key_user, key_pass = self.credentials.poetry_login()
-            self.printer(f"Set environment variable {key_user}")
-            self.printer(f"Set environment variable {key_pass}")
+            self.log(f"Set environment variable {key_user}")
+            self.log(f"Set environment variable {key_pass}")
+        else:
+            self.log("No Poetry credentials provided, skipping Poetry login step")
 
     def step_3_2_run_poetry_install(self):
         """
@@ -97,10 +100,11 @@ class PoetryBasedLambdaLayerLocalBuilder(
         Runs Poetry install with --no-root to exclude the project package itself,
         installing only dependencies into an in-project virtual environment.
         """
+        self.log("--- Step 3.2 - Run 'poetry install'")
         path_bin_poetry = self.path_bin_poetry
         dir_repo = self.path_layout.dir_repo
         with temp_cwd(dir_repo):
-            self.printer("--- Run 'poetry config virtualenvs.in-project true'")
+            self.log("--- Run 'poetry config virtualenvs.in-project true'")
             args = [
                 f"{path_bin_poetry}",
                 "config",
@@ -109,7 +113,7 @@ class PoetryBasedLambdaLayerLocalBuilder(
             ]
             subprocess.run(args, cwd=dir_repo, check=True)
 
-            self.printer("--- Run 'poetry install --no-root'")
+            self.log("--- Run 'poetry install --no-root'")
             args = [
                 f"{path_bin_poetry}",
                 "install",

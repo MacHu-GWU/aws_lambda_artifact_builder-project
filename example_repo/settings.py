@@ -62,7 +62,7 @@ class Settings:
 
     @property
     def path_bin_poetry(self) -> Path:
-        return dir_here / ".venv" / "bin" / "poetry"
+        return Path("poetry")
 
     @property
     def path_bin_uv(self) -> Path:
