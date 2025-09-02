@@ -98,6 +98,9 @@ def upload_layer_zip_to_s3(
         overwrite=True,
         extra_args={
             "ContentType": "application/zip",
+            # Store manifest MD5 hash in S3 object metadata for consistency validation
+            # This enables the publish step to verify that the uploaded layer.zip
+            # corresponds to the current local dependency manifest before layer creation
             "Metadata": {
                 S3MetadataKeyEnum.manifest_md5.value: manifest_manager.manifest_md5,
             },

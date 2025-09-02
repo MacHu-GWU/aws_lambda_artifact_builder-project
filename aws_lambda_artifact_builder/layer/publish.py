@@ -76,10 +76,49 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
     lambda_client: "LambdaClient" = dataclasses.field(default=REQ)
 
     def is_layer_zip_exists(self) -> bool:
+        """
+        Check if the layer zip file exists in S3 temporary storage.
+        
+        Verifies that the layer.zip file was successfully uploaded to S3 during
+        the upload phase and is available for Lambda layer creation. This is a
+        prerequisite validation before attempting to publish a new layer version.
+        
+        **Common Failure Scenarios:**
+        
+        - **Upload Step Skipped**: The upload phase was not executed
+        - **Upload Failed**: Network issues or S3 permissions prevented successful upload
+        - **File Deleted**: The temporary zip file was manually removed from S3
+        - **Wrong S3 Path**: Misconfigured S3 directory structure
+        
+        :return: True if layer.zip exists in S3, False otherwise
+        """
         s3path = self.s3_layout.s3path_temp_layer_zip
         return s3path.exists(bsm=self.s3_client)
 
     def is_layer_zip_consistent(self) -> bool:
+        """
+        Validate that the uploaded layer.zip matches the current local manifest.
+        
+        Compares the manifest MD5 hash stored in the S3 layer.zip metadata
+        with the MD5 hash of the current local manifest file. This ensures that
+        the uploaded layer artifact corresponds to the current dependency state
+        before creating a new layer version.
+        
+        **Consistency Issues That Can Occur:**
+        
+        - **Manifest Modified**: Local manifest file was changed after upload
+        - **Wrong Upload**: A different project's layer.zip was uploaded
+        - **Missing Metadata**: Upload process failed to store manifest MD5
+        - **Stale Upload**: Old layer.zip from previous dependency state
+        
+        **Why This Check Matters:**
+        
+        Without this validation, you might publish a layer version that doesn't
+        match your current dependencies, leading to runtime errors or unexpected
+        behavior in Lambda functions that use the layer.
+        
+        :return: True if uploaded layer.zip matches current manifest, False otherwise
+        """
         s3path = self.s3_layout.s3path_temp_layer_zip
         s3path.head_object(bsm=self.s3_client)
         manifest_md5 = s3path.metadata.get(
@@ -326,15 +365,27 @@ def publish_layer_version(
         printer=printer,
     )
 
+    # CRITICAL: Validate that layer.zip exists in S3 before attempting publication
+    # This prevents "NoSuchKey" errors during Lambda layer creation
+    # Common causes: upload step was skipped, S3 upload failed, or file was manually deleted
     if publisher.is_layer_zip_exists() is False:
         s3path = publisher.s3_layout.s3path_temp_layer_zip
-        raise FileNotFoundError(f"Layer zip file {s3path:.uri} does not exist!")
+        raise FileNotFoundError(
+            f"Layer zip file {s3path.uri} does not exist! "
+            f"Please run the upload step first to create the layer.zip in S3."
+        )
+    
+    # CRITICAL: Validate that the uploaded layer.zip matches current local manifest
+    # This prevents publishing a layer with wrong dependencies that could cause runtime errors
+    # Common causes: manifest was modified after upload, wrong layer.zip was uploaded,
+    # or upload metadata is missing/corrupted
     if publisher.is_layer_zip_consistent() is False:
         path = publisher.path_manifest
         s3path = publisher.s3_layout.s3path_temp_layer_zip
         raise ValueError(
-            f"Layer zip file {s3path:.uri} manifest_md5 in metadata "
-            f"is inconsistent with {path}!"
+            f"Layer zip file {s3path.uri} is inconsistent with current manifest {path}! "
+            f"The uploaded layer.zip corresponds to a different dependency state. "
+            f"Please re-run the upload step to sync the layer.zip with current dependencies."
         )
 
     # Check if the local dependency manifest has changed since the last publication
