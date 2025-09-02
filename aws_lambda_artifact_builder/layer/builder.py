@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import hashlib
+"""
+Lambda layer building implementation - Step 1 of the layer creation workflow.
+"""
+
 import dataclasses
 import subprocess
 from pathlib import Path
@@ -53,12 +56,13 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
     skip_prompt: bool = dataclasses.field(default=False)
     printer: T_PRINTER = dataclasses.field(default=print)
 
-    _tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
+    _build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
 
     @cached_property
     def path_layout(self) -> LayerPathLayout:
         """
-        :class:`LayerPathLayout` object for managing build paths.
+        :class:`~aws_lambda_artifact_builder.layer.foundation.LayerPathLayout`
+        object for managing build paths.
         """
         return LayerPathLayout(
             path_pyproject_toml=self.path_pyproject_toml,
@@ -107,7 +111,7 @@ class BasedLambdaLayerLocalBuilder(BaseFrozenModel):
         Provides visibility into the build process by showing which tool
         is being used and where artifacts will be created.
         """
-        self.printer(f"--- Build Lambda layer artifacts using {self._tool.value} ...")
+        self.printer(f"--- Build Lambda layer artifacts using {self._build_tool.value} ...")
         p = self.path_pyproject_toml
         self.printer(f"path_pyproject_toml = {p}")
         p = self.path_layout.dir_build_lambda_layer
@@ -185,7 +189,8 @@ class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
     @cached_property
     def path_layout(self) -> LayerPathLayout:
         """
-        :class:`LayerPathLayout` object for managing build paths.
+        :class:`~aws_lambda_artifact_builder.layer.foundation.LayerPathLayout`
+        object for managing build paths.
         """
         return LayerPathLayout(
             path_pyproject_toml=self.path_pyproject_toml,

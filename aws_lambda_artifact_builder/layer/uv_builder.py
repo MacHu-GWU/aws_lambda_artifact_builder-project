@@ -50,7 +50,7 @@ class UVBasedLambdaLayerLocalBuilder(
     """
 
     path_bin_uv: Path = dataclasses.field(default=REQ)
-    _tool: str = dataclasses.field(default=LayerBuildToolEnum.uv)
+    _build_tool: str = dataclasses.field(default=LayerBuildToolEnum.uv)
 
     def step_1_1_print_info(self):
         """

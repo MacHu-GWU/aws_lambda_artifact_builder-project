@@ -42,7 +42,7 @@ class PipBasedLambdaLayerLocalBuilder(
     """
 
     path_bin_pip: Path = dataclasses.field(default=REQ)
-    _tool: str = dataclasses.field(default=LayerBuildToolEnum.pip)
+    _build_tool: str = dataclasses.field(default=LayerBuildToolEnum.pip)
 
     def step_1_1_print_info(self):
         """

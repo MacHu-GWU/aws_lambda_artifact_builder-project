@@ -50,7 +50,7 @@ class PoetryBasedLambdaLayerLocalBuilder(
     """
 
     path_bin_poetry: Path = dataclasses.field(default=REQ)
-    _tool: str = dataclasses.field(default=LayerBuildToolEnum.poetry)
+    _build_tool: str = dataclasses.field(default=LayerBuildToolEnum.poetry)
 
     def step_1_1_print_info(self):
         """

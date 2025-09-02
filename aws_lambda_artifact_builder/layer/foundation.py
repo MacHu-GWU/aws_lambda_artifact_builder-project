@@ -36,7 +36,6 @@ from ..utils import write_bytes, clean_build_directory
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3 import S3Client
-    from mypy_boto3_lambda import LambdaClient
 
 
 @dataclasses.dataclass(frozen=True)
@@ -644,164 +643,11 @@ class LayerS3Layout:
 
 
 @dataclasses.dataclass(frozen=True)
-class BasedLambdaLayerContainerBuilder(BaseFrozenModel):
-    """
-    Base command class for containerized Lambda layer builds.
-
-    This abstract base provides Docker container orchestration for building Lambda layers
-    using AWS SAM build images that match the Lambda runtime environment. It handles
-    container configuration, volume mounting, and script execution while delegating
-    tool-specific build logic to copied scripts that run inside the container.
-
-    **Architecture Benefits**:
-    - **Runtime Compatibility**: Uses official AWS Lambda container images
-    - **Isolation**: Builds don't affect the host environment
-    - **Reproducibility**: Consistent results across different development machines
-    - **Platform Support**: Handles both x86_64 and ARM64 architectures
-
-    **Command Pattern**: Encapsulates the complete containerized build workflow,
-    making it easy to test, extend, and maintain tool-specific build strategies.
-
-    **Usage**: Subclassed by tool-specific container builders that provide
-    the appropriate build scripts for execution inside the container.
-    """
-
-    path_pyproject_toml: Path = dataclasses.field(default=REQ)
-    py_ver_major: int = dataclasses.field(default=REQ)
-    py_ver_minor: int = dataclasses.field(default=REQ)
-    is_arm: bool = dataclasses.field(default=REQ)
-    credentials: Credentials | None = dataclasses.field(default=None)
-    printer: T_PRINTER = dataclasses.field(default=print)
-
-    @cached_property
-    def path_layout(self) -> LayerPathLayout:
-        """
-        :class:`LayerPathLayout` object for managing build paths.
-        """
-        return LayerPathLayout(
-            path_pyproject_toml=self.path_pyproject_toml,
-        )
-
-    @property
-    def image_tag(self) -> str:
-        """
-        Docker image tag based on target architecture.
-
-        :return: Architecture-specific tag for AWS SAM build images
-        """
-        if self.is_arm:
-            return "latest-arm64"
-        else:
-            return "latest-x86_64"
-
-    @property
-    def image_uri(self) -> str:
-        """
-        Full Docker image URI for AWS SAM build container.
-
-        Uses official AWS SAM images that match the Lambda runtime environment
-        to ensure compatibility between local builds and deployed functions.
-
-        :return: Complete Docker image URI from AWS public ECR
-        """
-        return (
-            f"public.ecr.aws/sam"
-            f"/build-python{self.py_ver_major}.{self.py_ver_minor}"
-            f":{self.image_tag}"
-        )
-
-    @property
-    def platform(self) -> str:
-        """
-        Docker platform specification for target architecture.
-
-        :return: Platform string for docker run --platform argument
-        """
-        if self.is_arm:
-            return "linux/arm64"
-        else:
-            return "linux/amd64"
-
-    @property
-    def container_name(self) -> str:
-        """
-        Unique container name for the build process.
-
-        Includes Python version and architecture to avoid conflicts when
-        running multiple builds concurrently.
-
-        :return: Descriptive container name for docker run --name argument
-        """
-        suffix = "arm64" if self.is_arm else "amd64"
-        return (
-            f"lambda_layer_builder"
-            f"-python{self.py_ver_major}{self.py_ver_minor}"
-            f"-{suffix}"
-        )
-
-    @property
-    def args(self) -> list[str]:
-        """
-        Complete Docker run command arguments.
-
-        Constructs the full command for executing the build script inside
-        a Docker container with proper volume mounting and platform specification.
-
-        :return: List of command arguments for subprocess execution
-        """
-        return [
-            "docker",
-            "run",
-            "--rm",  # Auto-remove container when done
-            "--name",
-            self.container_name,
-            "--platform",
-            self.platform,
-            "--mount",
-            f"type=bind,source={self.path_layout.dir_project_root},target=/var/task",
-            self.image_uri,
-            "python",
-            "-u",  # Unbuffered output for real-time logging
-            self.path_layout.path_build_lambda_layer_in_container_script_in_container,
-        ]
-
-    def step_01_copy_build_script(
-        self,
-        path_script: Path,
-    ):
-        """
-        Copy the tool-specific container build script to the project directory.
-
-        Subclasses must implement this method to provide the appropriate
-        build script that will be executed inside the Docker container.
-        """
-        raise NotImplementedError
-
-    def step_02_setup_private_repository_credential(self):
-        """
-        Configure private repository authentication (optional).
-
-        Subclasses can override this method to set up credentials for
-        accessing private PyPI servers or corporate package repositories.
-        """
-        if isinstance(self.credentials, Credentials) is False:
-            return
-        p = self.path_layout.path_private_repository_credentials_in_local
-        self.printer(f"Dump private repository credentials to {p}")
-        self.credentials.dump(path=p)
-
-    def step_03_docker_run(self):
-        """
-        Execute the Docker container build process.
-
-        Runs the configured Docker command to build the Lambda layer
-        inside the container environment.
-        """
-        subprocess.run(self.args)
-
-
-@dataclasses.dataclass(frozen=True)
 class LayerManifestManager(BaseFrozenModel):
+    """
+    Manages dependency manifest files for Lambda layers.
+    """
+
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
     s3dir_lambda: "S3Path" = dataclasses.field(default=REQ)
     layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
