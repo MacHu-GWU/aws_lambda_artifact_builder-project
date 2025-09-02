@@ -22,7 +22,7 @@ function that combines all three steps from example_1.py into a single function 
 - Assumes conventional build folder structure: build/lambda/source/build/
 """
 
-from aws_lambda_artifact_builder.source import build_package_upload_source_artifacts
+from aws_lambda_artifact_builder.api import build_package_upload_source_artifacts
 
 from pathlib import Path
 from s3pathlib import S3Path

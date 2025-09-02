@@ -10,7 +10,7 @@ This script shows the complete workflow:
 3. Upload the zip to S3 with proper versioning and metadata
 """
 
-from aws_lambda_artifact_builder.source import (
+from aws_lambda_artifact_builder.api import (
     build_source_artifacts_using_pip,
     create_source_zip,
     upload_source_artifacts,

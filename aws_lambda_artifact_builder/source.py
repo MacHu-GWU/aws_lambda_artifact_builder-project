@@ -38,7 +38,7 @@ try:
 except ImportError:  # pragma: no cover
     import tomli as tomllib  # Python < 3.11
 
-from func_args.api import OPT
+from func_args.api import BaseFrozenModel, REQ, OPT
 from .imports import S3Path
 
 from .vendor.better_pathlib import temp_cwd
