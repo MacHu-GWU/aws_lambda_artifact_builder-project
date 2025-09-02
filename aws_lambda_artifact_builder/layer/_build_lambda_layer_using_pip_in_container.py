@@ -97,7 +97,7 @@ print(f"pip install aws_lambda_artifact_builder elapsed: {elapsed:.2f} seconds")
 # local and container-based builds
 from aws_lambda_artifact_builder.api import (
     Credentials,
-    build_layer_artifacts_using_pip_in_local,
+    PipBasedLambdaLayerLocalBuilder,
 )
 
 # Load private repository credentials if available
@@ -124,12 +124,13 @@ else:
 # which orchestrates the :class:`~aws_lambda_artifact_builder.layer.pip_builder.PipBasedLambdaLayerLocalBuilder`
 # command execution workflow
 print("--- Starting pip-based layer build inside container ...")
-build_layer_artifacts_using_pip_in_local(
+builder = PipBasedLambdaLayerLocalBuilder(
     path_bin_pip=path_bin_pip,  # Container's pip executable
     path_pyproject_toml=dir_here / "pyproject.toml",  # Mounted project configuration
     credentials=credentials,  # Loaded from mounted credentials file
     skip_prompt=True,  # Automatic execution without user interaction
 )
+builder.run()
 print("--- Container-based layer build completed successfully!")
 
 # The resulting layer.zip file will be available on the host machine at:

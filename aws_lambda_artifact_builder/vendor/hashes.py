@@ -25,6 +25,7 @@ import enum
 import hashlib
 from pathlib import Path
 
+__version__ = "0.1.1"
 
 class HashAlgoEnum(str, enum.Enum):
     md5 = "md5"
@@ -272,4 +273,3 @@ class Hashes:
 
 
 hashes = Hashes()
-hashes.use_sha256().use_hexdigesst()
