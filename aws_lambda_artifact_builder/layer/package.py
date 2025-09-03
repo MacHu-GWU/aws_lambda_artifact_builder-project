@@ -186,7 +186,7 @@ class LambdaLayerZipper(BaseFrozenModel):
     Creates ``build/lambda/layer/layer.zip`` ready for deployment.
     """
     path_pyproject_toml: Path = dataclasses.field(default=REQ)
-    build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
+    layer_build_tool: LayerBuildToolEnum = dataclasses.field(default=REQ)
     ignore_package_list: list[str] | None = dataclasses.field(default=None)
     verbose: bool = dataclasses.field(default=True)
 
@@ -207,14 +207,14 @@ class LambdaLayerZipper(BaseFrozenModel):
         )
 
     def run(self):
-        if self.build_tool == LayerBuildToolEnum.pip:
+        if self.layer_build_tool == LayerBuildToolEnum.pip:
             pass
-        elif self.build_tool == LayerBuildToolEnum.poetry:
+        elif self.layer_build_tool == LayerBuildToolEnum.poetry:
             self.move_to_dir_python()
-        elif self.build_tool == LayerBuildToolEnum.uv:
+        elif self.layer_build_tool == LayerBuildToolEnum.uv:
             self.move_to_dir_python()
         else:
-            raise ValueError(f"Unsupported build tool: {self.build_tool}")
+            raise ValueError(f"Unsupported build tool: {self.layer_build_tool}")
 
         create_layer_zip_file(
             dir_python=self.path_layout.dir_python,

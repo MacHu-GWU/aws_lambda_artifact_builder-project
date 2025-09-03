@@ -32,6 +32,7 @@ from .layer.package import create_layer_zip_file
 from .layer.package import LambdaLayerZipper
 from .layer.upload import upload_layer_zip_to_s3
 from .layer.publish import LambdaLayerVersionPublisher
+from .layer.workflow import BuildPackageUploadAndPublishWorkflow
 from .vendor.better_pathlib import temp_cwd
 from .vendor.hashes import hashes
 from .vendor.timer import DateTimeTimer
