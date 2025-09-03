@@ -21,4 +21,5 @@ sub packages and modules
     publish <publish>
     upload <upload>
     uv_builder <uv_builder>
+    workflow <workflow>
     

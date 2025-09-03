@@ -45,9 +45,10 @@ from aws_lambda_artifact_builder.api import Credentials
 
 @dataclasses.dataclass
 class Settings:
+    layer_name: str = dataclasses.field()
     py_ver_major: int = dataclasses.field()
     py_ver_minor: int = dataclasses.field()
-    layer_name: str = dataclasses.field()
+    is_arm: bool = dataclasses.field()
     aws_profile: str = dataclasses.field()
     aws_region: str = dataclasses.field()
     private_index_name: str | None = dataclasses.field(default=None)
@@ -102,9 +103,10 @@ class Settings:
 
 
 settings = Settings(
+    layer_name="aws_lambda_artifact_builder_my_app",
     py_ver_major=3,
     py_ver_minor=11,
-    layer_name="aws_lambda_artifact_builder_my_app",
+    is_arm=False,
     aws_profile="esc_app_dev_us_east_1",
     aws_region="us-east-1",
     private_index_name="esc",

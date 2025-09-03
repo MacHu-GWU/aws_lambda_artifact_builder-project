@@ -106,7 +106,7 @@ def copy_source_for_lambda_deployment(
     necessary runtime files. This function helps create such packages by:
 
     - Filtering source files based on include/exclude patterns
-    - Automatically excluding Python cache files (__pycache__, *.pyc, *.pyo)
+    - Automatically excluding Python cache files (``__pycache__``, ``*.pyc``, ``*.pyo``)
     - Preserving directory structure for proper module imports
     - Creating a clean target directory for packaging
 
@@ -134,7 +134,7 @@ def copy_source_for_lambda_deployment(
 
     .. note::
         The target directory is completely replaced if it exists. Python cache
-        files (__pycache__, *.pyc, *.pyo) are always excluded regardless of
+        files (``__pycache__``, ``*.pyc``, ``*.pyo``) are always excluded regardless of
         the exclude parameter.
 
     .. seealso::

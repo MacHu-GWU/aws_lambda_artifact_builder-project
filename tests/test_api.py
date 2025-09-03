@@ -37,6 +37,7 @@ def test():
     _ = api.LambdaLayerZipper
     _ = api.upload_layer_zip_to_s3
     _ = api.LambdaLayerVersionPublisher
+    _ = api.LambdaLayerBuildPackageUploadAndPublishWorkflow
     _ = api.temp_cwd
     _ = api.hashes
     _ = api.DateTimeTimer

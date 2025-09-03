@@ -527,7 +527,7 @@ class LayerS3Layout:
     in S3 with proper versioning support. It manages both temporary upload locations
     and permanent versioned storage for requirements tracking and layer management.
 
-    Assuming ``s3dir_lambda`` is ``s3://bucket/path/lambda``, the relevant paths are::
+    Assuming ``s3dir_lambda`` is ``s3://bucket/path/lambda``, the relevant paths are:
 
     - ``${s3dir_lambda}/layer/layer.zip``
         :meth:`s3path_temp_layer_zip`, Temporary upload location for layer zip file.
