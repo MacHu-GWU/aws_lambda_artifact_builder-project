@@ -5,6 +5,7 @@ from aws_lambda_artifact_builder import api
 
 def test():
     _ = api
+    _ = api.ZFILL
     _ = api.S3MetadataKeyEnum
     _ = api.LayerBuildToolEnum
     _ = api.write_bytes

@@ -45,9 +45,8 @@ from .vendor.better_pathlib import temp_cwd
 from .vendor.hashes import hashes
 
 from .constants import S3MetadataKeyEnum
-from .utils import (
-    clean_build_directory,
-)
+from .typehint import T_PRINTER
+from .utils import clean_build_directory
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from mypy_boto3_s3.client import S3Client
@@ -62,9 +61,9 @@ def build_source_artifacts_using_pip(
     path_bin_pip: Path,
     path_setup_py_or_pyproject_toml: Path,
     dir_lambda_source_build: Path,
-    verbose: bool = True,
     skip_prompt: bool = False,
-    printer: T.Callable[[str], None] = print,
+    verbose: bool = True,
+    printer: T_PRINTER = print,
 ):
     """
     Build Lambda source artifacts by installing the current package using pip.
@@ -119,7 +118,7 @@ def create_source_zip(
     dir_lambda_source_build: Path,
     path_source_zip: Path,
     verbose: bool = True,
-    printer: T.Callable[[str], None] = print,
+    printer: T_PRINTER = print,
 ) -> str:
     """
     Create a compressed zip archive from the Lambda source build directory.
@@ -209,7 +208,7 @@ def upload_source_artifacts(
     metadata: dict[str, str] | None = OPT,
     tags: dict[str, str] | None = OPT,
     verbose: bool = True,
-    printer: T.Callable[[str], None] = print,
+    printer: T_PRINTER = print,
 ) -> "S3Path":
     """
     Upload Lambda source artifact zip file to S3 with versioning and metadata.
@@ -227,6 +226,7 @@ def upload_source_artifacts(
     :param tags: Optional S3 object tags to attach
     :param verbose: If True, display upload progress and URLs; if False, run quietly
     :param printer: Function to handle output messages, defaults to built-in print
+
     :return: S3Path object pointing to the uploaded source.zip file
     """
     if verbose:
@@ -276,6 +276,10 @@ def upload_source_artifacts(
 
 @dataclasses.dataclass
 class BuildSourceArtifactsResult:
+    """
+    Result of building and uploading Lambda source artifacts.
+    """
+
     source_sha256: str
     s3path_source_zip: "S3Path" = dataclasses.field()
 
@@ -284,9 +288,30 @@ def build_package_upload_source_artifacts(
     s3_client: "S3Client",
     dir_project_root: Path,
     s3dir_lambda: "S3Path",
-    verbose: bool = True,
     skip_prompt: bool = False,
+    verbose: bool = True,
+    printer: T_PRINTER = print,
 ) -> BuildSourceArtifactsResult:
+    """
+    Build, package, and upload Lambda source artifacts to S3.
+
+    This is a all-in-one function that handles the complete lifecycle of Lambda source.
+
+    :param s3_client: Boto3 S3 client for upload operations
+    :param dir_project_root: Root directory of the Python project containing setup.py or pyproject.toml
+    :param s3dir_lambda: Base S3 directory for Lambda artifacts, e.g., ``s3://bucket/path/to/lambda/``
+    :param skip_prompt: If True, automatically clean existing build directory without user confirmation
+    :param verbose: If True, display detailed progress information; if False, run quietly
+    :param printer: Function to handle output messages, defaults to built-in print
+
+    :return: :class:`BuildSourceArtifactsResult` containing SHA256 hash and S3 path of the uploaded source.zip
+
+    .. seealso::
+
+        - :func:`build_source_artifacts_using_pip`
+        - :func:`create_source_zip`
+        - :func:`upload_source_artifacts`
+    """
     # step 1: build source artifacts using pip
     path_bin_pip = dir_project_root / ".venv" / "bin" / "pip"
     path_pyproject_toml = dir_project_root / "pyproject.toml"
@@ -295,8 +320,9 @@ def build_package_upload_source_artifacts(
         path_bin_pip=path_bin_pip,
         path_setup_py_or_pyproject_toml=path_pyproject_toml,
         dir_lambda_source_build=dir_lambda_source_build,
-        verbose=verbose,
         skip_prompt=skip_prompt,
+        verbose=verbose,
+        printer=printer,
     )
 
     # step 2: create compressed zip archive of the built source
@@ -305,6 +331,7 @@ def build_package_upload_source_artifacts(
         dir_lambda_source_build=dir_lambda_source_build,
         path_source_zip=path_source_zip,
         verbose=verbose,
+        printer=printer,
     )
 
     # step 3: upload the zip file to S3 with versioning
@@ -317,6 +344,7 @@ def build_package_upload_source_artifacts(
         path_source_zip=path_source_zip,
         s3dir_lambda=s3dir_lambda,
         verbose=verbose,
+        printer=printer,
     )
 
     return BuildSourceArtifactsResult(

@@ -23,7 +23,7 @@ class MyPyWf(PyWf):
         )
 
         for group, path in [
-            ("aws", self.dir_project_root / "requirements-aws.txt"),
+            ("upload", self.dir_project_root / "requirements-upload.txt"),
             ("publish", self.dir_project_root / "requirements-publish.txt"),
         ]:
             self._poetry_export_group(

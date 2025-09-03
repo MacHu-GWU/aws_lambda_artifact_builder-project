@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+from .constants import ZFILL
 from .constants import S3MetadataKeyEnum
 from .constants import LayerBuildToolEnum
 from .utils import write_bytes
