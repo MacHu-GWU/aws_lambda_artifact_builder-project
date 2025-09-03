@@ -11,6 +11,14 @@ with aws_lambda_artifact_builder.DateTimeTimer(title="Total build time"):
         credentials=settings.credentials,
         is_arm=False,
     )
+
+    # Run the workflow in one line
     builder.run()
+
+    # or run step by step
+    # builder.step_1_preflight_check()
+    # builder.step_2_prepare_environment()
+    # builder.step_3_execute_build()
+    # builder.step_4_finalize_artifacts()
 
 teardown_aws_lambda_artifact_builder()

@@ -1,3 +1,5 @@
+.. _Layer-Step-4:
+
 Step 4: Publish Versioned Lambda Layer
 ==============================================================================
 Create versioned AWS Lambda layers with intelligent change detection, ensuring new layer versions are only published when dependencies have actually changed.
@@ -39,30 +41,10 @@ Basic Usage
 ------------------------------------------------------------------------------
 Use the :class:`~aws_lambda_artifact_builder.layer.publish.LambdaLayerVersionPublisher` class to publish your layer:
 
-.. code-block:: python
+.. tip::
 
-    from aws_lambda_artifact_builder.api import LambdaLayerVersionPublisher, LayerBuildToolEnum
-    from pathlib import Path
-    from boto_session_manager import BotoSesManager
-    from s3pathlib import S3Path
-
-    # Configure AWS clients and paths
-    bsm = BotoSesManager(profile_name="your-profile")
-    s3dir_lambda = S3Path("s3://your-bucket/lambda/layers/").to_dir()
-
-    # Create and run the publisher
-    publisher = LambdaLayerVersionPublisher(
-        s3_client=bsm.s3_client,
-        lambda_client=bsm.lambda_client,
-        path_pyproject_toml=Path("pyproject.toml"),
-        s3dir_lambda=s3dir_lambda,
-        layer_build_tool=LayerBuildToolEnum.uv,
-        layer_name="my-lambda-layer",
-        verbose=True,
-    )
-    
-    layer_deployment = publisher.run()
-    print(f"✅ Published layer version {layer_deployment.layer_version}")
+    - `settings <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/settings.py>`_: example settings.
+    - `example_6_publish.py <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/example_6_publish.py>`_: usage example.
 
 
 Intelligent Change Detection

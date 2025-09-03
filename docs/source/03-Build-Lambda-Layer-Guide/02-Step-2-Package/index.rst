@@ -1,3 +1,5 @@
+.. _Layer-Step-2:
+
 Step 2: Package Dependencies into Lambda Layer
 ==============================================================================
 Transform your built dependencies into a properly structured, optimized zip file ready for AWS Lambda deployment.
@@ -45,18 +47,12 @@ Different build tools install packages to different locations, but Lambda layers
 
 Basic Usage
 ------------------------------------------------------------------------------
-Create a :class:`~aws_lambda_artifact_builder.layer.package.LambdaLayerZipper` instance and call its ``run()`` method:
+Create a :class:`~aws_lambda_artifact_builder.layer.package.LambdaLayerZipper` instance and call its ``run()`` method.
 
-.. code-block:: python
+.. tip::
 
-    from aws_lambda_artifact_builder.api import LambdaLayerZipper, LayerBuildToolEnum
-    from pathlib import Path
-
-    zipper = LambdaLayerZipper(
-        path_pyproject_toml=Path("pyproject.toml"),
-        build_tool=LayerBuildToolEnum.uv,  # or poetry, pip
-    )
-    zipper.run()
+    - `settings <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/settings.py>`_: example settings.
+    - `example_4_package.py <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/example_4_package.py>`_: usage example.
 
 This creates ``build/lambda/layer/layer.zip`` in your project root.
 

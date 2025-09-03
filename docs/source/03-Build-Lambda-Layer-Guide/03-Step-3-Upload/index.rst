@@ -1,3 +1,5 @@
+.. _Layer-Step-3:
+
 Step 3: Upload Layer Zip to S3 Storage
 ==============================================================================
 Upload your packaged Lambda layer zip file to S3 storage, making it accessible for AWS Lambda layer creation and deployment.
@@ -49,24 +51,9 @@ Basic Usage
 ------------------------------------------------------------------------------
 Use the :func:`~aws_lambda_artifact_builder.layer.upload.upload_layer_zip_to_s3` function to upload your layer:
 
-.. code-block:: python
+.. tip::
 
-    from aws_lambda_artifact_builder.api import upload_layer_zip_to_s3, LayerBuildToolEnum
-    from pathlib import Path
-    from boto_session_manager import BotoSesManager
-    from s3pathlib import S3Path
-
-    # Configure AWS client and S3 paths
-    bsm = BotoSesManager(profile_name="your-profile")
-    s3dir_lambda = S3Path("s3://your-bucket/lambda/layers/").to_dir()
-
-    # Upload the layer zip file
-    upload_layer_zip_to_s3(
-        s3_client=bsm.s3_client,
-        path_pyproject_toml=Path("pyproject.toml"),
-        s3dir_lambda=s3dir_lambda,
-        layer_build_tool=LayerBuildToolEnum.uv,  # Match your build tool
-        verbose=True,
-    )
+    - `settings <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/settings.py>`_: example settings.
+    - `example_5_upload.py <https://github.com/MacHu-GWU/aws_lambda_artifact_builder-project/blob/main/example_repo/example_5_upload.py>`_: usage example.
 
 This uploads your layer and displays the S3 location and AWS Console URL.
