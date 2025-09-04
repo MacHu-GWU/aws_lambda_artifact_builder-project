@@ -71,14 +71,14 @@ def main():
     # This code block is used to install aws_lambda_artifact_builder
     # during local deployment and testing, we use this command to simulate
     # "pip install aws_lambda_artifact_builder"
-    path_req = dir_here / "requirements-aws-lambda-artifact-builder.txt"
-    args = [f"{path_bin_pip}", "install", "-r", f"{path_req}"]
-    subprocess.run(args, check=True)
+    # path_req = dir_here / "requirements-aws-lambda-artifact-builder.txt"
+    # args = [f"{path_bin_pip}", "install", "-r", f"{path_req}"]
+    # subprocess.run(args, check=True)
     # --- End dev code ---
     # --- Production code ---
     # TODO uncomment this in production
-    # args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.1,<1.0.0"]
-    # subprocess.run(args, check=True)
+    args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.3,<1.0.0"]
+    subprocess.run(args, check=True)
     # --- End production code ---
 
     elapsed = (datetime.now() - st).total_seconds()
