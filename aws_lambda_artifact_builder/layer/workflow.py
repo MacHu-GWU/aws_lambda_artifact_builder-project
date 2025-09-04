@@ -26,7 +26,7 @@ from .poetry_builder import PoetryBasedLambdaLayerContainerBuilder
 from .uv_builder import UVBasedLambdaLayerContainerBuilder
 from .package import LambdaLayerZipper
 from .upload import upload_layer_zip_to_s3
-from .publish import LambdaLayerVersionPublisher
+from .publish import LayerDeployment, LambdaLayerVersionPublisher
 
 
 if T.TYPE_CHECKING:  # pragma: no cover
@@ -109,11 +109,11 @@ class LambdaLayerBuildPackageUploadAndPublishWorkflow(BaseLogger):
         default=None
     )
 
-    def run(self):
+    def run(self) -> "LayerDeployment":
         self.step_1_build()
         self.step_2_package()
         self.step_3_upload()
-        self.step_4_publish()
+        return self.step_4_publish()
 
     def step_1_build(self):
         if self.layer_build_tool == LayerBuildToolEnum.pip:
@@ -169,7 +169,7 @@ class LambdaLayerBuildPackageUploadAndPublishWorkflow(BaseLogger):
             printer=self.printer,
         )
 
-    def step_4_publish(self):
+    def step_4_publish(self) -> "LayerDeployment":
         publisher = LambdaLayerVersionPublisher(
             layer_name=self.layer_name,
             path_pyproject_toml=self.path_pyproject_toml,

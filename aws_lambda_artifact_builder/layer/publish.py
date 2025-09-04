@@ -93,7 +93,7 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         self.step_1_2_ensure_layer_zip_is_consistent()
         self.step_1_3_ensure_dependencies_have_changed()
 
-    def step_2_publish_layer_version(self):
+    def step_2_publish_layer_version(self) -> "LayerDeployment":
         """
         Execute the layer publication workflow, creating a new Lambda layer version
         """
