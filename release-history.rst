@@ -15,6 +15,13 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.3 (2025-09-04)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Bugfixes**
+
+- Fix bug in ``_build`` scripts that used development install logic instead of production install logic for ``aws_lambda_artifact_builder`` dependency
+
+
 0.1.2 (2025-09-04)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Major Architecture Refactoring**
