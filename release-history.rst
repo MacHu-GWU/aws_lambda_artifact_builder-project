@@ -15,11 +15,18 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.5 (2025-09-04)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Bugfixes**
+
+- Fix manifest check logic in ``LambdaLayerVersionPublisher`` to treat missing manifest as changed. The fix in 0.1.4 was incorrect.
+
+
 0.1.4 (2025-09-04)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Bugfixes**
 
-- Fix manifest check logic in ``LambdaLayerVersionPublisher`` to treat missing manifest as changed, ensuring correct layer publishing behavior
+- Fix manifest check logic in ``LambdaLayerVersionPublisher`` to treat missing manifest as changed, ensuring correct layer publishing behavior (this fix implementation is wrong)
 - Add preflight checks for required build files (requirements.txt, poetry.lock, uv.lock) in pip, poetry, and uv builders
 
 
