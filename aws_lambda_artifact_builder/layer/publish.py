@@ -255,6 +255,9 @@ class LambdaLayerVersionPublisher(LayerManifestManager):
         s3path_manifest = self.get_versioned_manifest(
             version=latest_layer_version.version
         )
+        # Never seen a manifest for this version, treat as changed
+        if s3path_manifest.exists(bsm=self.s3_client) is False:
+            return False
 
         # Compare local manifest content with stored version
         # Read both files as text and perform exact content comparison
