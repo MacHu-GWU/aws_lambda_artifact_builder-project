@@ -69,7 +69,7 @@ def main():
     # --- End dev code ---
     # --- Production code ---
     # TODO uncomment this in production
-    args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.3,<1.0.0"]
+    args = [f"{path_bin_pip}", "install", "aws_lambda_artifact_builder>=0.1.6,<1.0.0"]
     subprocess.run(args, check=True)
     # --- End production code ---
 
