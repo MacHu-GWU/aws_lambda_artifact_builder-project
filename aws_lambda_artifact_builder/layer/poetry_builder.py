@@ -137,3 +137,12 @@ class PoetryBasedLambdaLayerContainerBuilder(
     path_script: Path = dataclasses.field(
         default=path_build_lambda_layer_using_poetry_in_container_script
     )
+
+    def step_1_preflight_check(self):
+        super().step_1_preflight_check()
+        if self.path_layout.path_poetry_lock.exists() is False:
+            raise FileNotFoundError(
+                f"Poetry lock file not found: {self.path_layout.path_poetry_lock},"
+                f"cannot proceed with poetry-based build."
+                f"Please run 'poetry lock' to generate the lock file."
+            )

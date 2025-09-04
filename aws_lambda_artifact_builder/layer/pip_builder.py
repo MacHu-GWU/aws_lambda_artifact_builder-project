@@ -99,3 +99,11 @@ class PipBasedLambdaLayerContainerBuilder(
     path_script: Path = dataclasses.field(
         default=path_build_lambda_layer_using_pip_in_container_script
     )
+
+    def step_1_preflight_check(self):
+        super().step_1_preflight_check()
+        if self.path_layout.path_requirements_txt.exists() is False:
+            raise FileNotFoundError(
+                f"requirements.txt file not found: {self.path_layout.path_requirements_txt},"
+                f"cannot proceed with pip-based build."
+            )

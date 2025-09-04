@@ -362,6 +362,8 @@ class BasedLambdaLayerContainerBuilder(BaseLogger):
         inside the container environment.
         """
         self.log(f"--- Step 3.1 - Docker Run")
-        subprocess.run(self.docker_run_args)
+        # If the python script (``_build_lambda_layer_using_*.py``) raises an exception,
+        # docker run command will also fail with a non-zero exit code
+        subprocess.run(self.docker_run_args, check=True)
 
     # --- step_4_finalize_artifacts sub-steps

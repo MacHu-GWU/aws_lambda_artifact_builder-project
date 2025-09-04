@@ -132,3 +132,12 @@ class UVBasedLambdaLayerContainerBuilder(
     path_script: Path = dataclasses.field(
         default=path_build_lambda_layer_using_uv_in_container_script
     )
+
+    def step_1_preflight_check(self):
+        super().step_1_preflight_check()
+        if self.path_layout.path_uv_lock.exists() is False:
+            raise FileNotFoundError(
+                f"UV lock file not found: {self.path_layout.path_uv_lock},"
+                f"cannot proceed with uv-based build."
+                f"Please run 'uv lock' to generate the lock file."
+            )
