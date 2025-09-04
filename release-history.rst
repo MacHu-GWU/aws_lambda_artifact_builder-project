@@ -15,6 +15,14 @@ x.y.z (Backlog)
 **Miscellaneous**
 
 
+0.1.4 (2025-09-04)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+**Bugfixes**
+
+- Fix manifest check logic in ``LambdaLayerVersionPublisher`` to treat missing manifest as changed, ensuring correct layer publishing behavior
+- Add preflight checks for required build files (requirements.txt, poetry.lock, uv.lock) in pip, poetry, and uv builders
+
+
 0.1.3 (2025-09-04)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 **Bugfixes**
